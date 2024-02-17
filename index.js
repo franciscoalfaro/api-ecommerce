@@ -1,7 +1,7 @@
 //importar dependencia de conexion
-const {connection} = require("./database/connection");
+const { connection } = require("./database/connection");
 const express = require("express");
-const cors = require ("cors")
+const cors = require("cors")
 
 
 console.log("API Connection success")
@@ -16,7 +16,7 @@ app.use(cors());
 
 //conertir los datos del body a obj js
 app.use(express.json());
-app.use(express.urlencoded({extended:true}));
+app.use(express.urlencoded({ extended: true }));
 
 
 //cargar rutas
@@ -25,6 +25,7 @@ const AddressRoutes = require("./routes/address")
 const ProductRoutes = require("./routes/product")
 const CategoryRoutes = require("./routes/category")
 const StockRoutes = require("./routes/stock")
+const OrderRoutes = require("./routes/order")
 
 //recovery
 const RecoveryRouter = require("./routes/recovery")
@@ -32,11 +33,12 @@ const RecoveryRouter = require("./routes/recovery")
 
 
 //app.use("/api/", )
-app.use("/api/user" ,UserRoutes)
-app.use("/api/address" ,AddressRoutes)
-app.use("/api/product" ,ProductRoutes)
-app.use("/api/category",CategoryRoutes )
-app.use("/api/stock",StockRoutes )
+app.use("/api/user", UserRoutes)
+app.use("/api/address", AddressRoutes)
+app.use("/api/product", ProductRoutes)
+app.use("/api/category", CategoryRoutes)
+app.use("/api/stock", StockRoutes)
+app.use("/api/order", OrderRoutes)
 
 //recovery
 app.use("/api/recovery", RecoveryRouter)
@@ -47,6 +49,6 @@ app.use("/api/recovery", RecoveryRouter)
 
 
 //escuchar peticiones 
-app.listen(puerto, ()=> {
-    console.log("Server runing in port :" +puerto)
+app.listen(puerto, () => {
+    console.log("Server runing in port :" + puerto)
 })
