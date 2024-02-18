@@ -11,7 +11,7 @@ const Order = require("../models/order")
 
 //end-point para crear stock
 const createOrder = async (req, res) => {
-    const { userId, products, shippingAddress, totalPrice } = req.body;
+    const { userId, products, shippingAddress } = req.body;
     console.log(req.body)
 
     try {
@@ -26,9 +26,7 @@ const createOrder = async (req, res) => {
 
         // Verificar que los productos existen
         for (const productData of products) {
-
             const product = await Product.findById(productData.product);
-
             if (!product) {
                 return res.status(404).json({
                     status: "error",
@@ -44,6 +42,18 @@ const createOrder = async (req, res) => {
                 status: "error",
                 message: "Dirección de envío no encontrada"
             });
+        }
+
+        // Calcular el total de la orden y actualizar el stock
+        let totalPrice = 0;
+        for (const productData of products) {
+            const product = await Product.findById(productData.product);
+            const quantity = productData.quantity;
+            totalPrice += product.price * quantity;
+
+            // Actualizar el stock
+            product.stock -= quantity;
+            await product.save();
         }
 
         // Crear la orden
@@ -71,6 +81,7 @@ const createOrder = async (req, res) => {
         });
     }
 }
+
 
 
 
