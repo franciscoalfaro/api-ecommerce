@@ -15,6 +15,10 @@ const AddressSchema = Schema({
         type:String,
         require:true
     },
+    phone:{
+        type:String,
+        require:true
+    },
     codigoPostal:{
         type:Number,
     },

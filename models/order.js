@@ -15,6 +15,10 @@ const OrderSchema = Schema({
                 ref: 'Product', 
                 required: true 
             },
+            priceunitary: { 
+                type: Number,
+                required: true 
+            },
             quantity: { 
                 type: Number, 
                 required: true 

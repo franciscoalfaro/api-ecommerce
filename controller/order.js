@@ -11,8 +11,7 @@ const Order = require("../models/order")
 
 //end-point para crear stock
 const createOrder = async (req, res) => {
-    const { userId, products, shippingAddress } = req.body;
-    console.log(req.body)
+    const { userId, products, shippingAddress, totalPrice } = req.body;
 
     try {
         // Verificar que el usuario existe
@@ -33,6 +32,9 @@ const createOrder = async (req, res) => {
                     message: "Producto no encontrado"
                 });
             }
+
+            // Actualizar el stock
+            await updateStock(productData.product, productData.quantity);
         }
 
         // Verificar que la dirección de envío existe
@@ -42,18 +44,6 @@ const createOrder = async (req, res) => {
                 status: "error",
                 message: "Dirección de envío no encontrada"
             });
-        }
-
-        // Calcular el total de la orden y actualizar el stock
-        let totalPrice = 0;
-        for (const productData of products) {
-            const product = await Product.findById(productData.product);
-            const quantity = productData.quantity;
-            totalPrice += product.price * quantity;
-
-            // Actualizar el stock
-            product.stock -= quantity;
-            await product.save();
         }
 
         // Crear la orden
@@ -82,8 +72,26 @@ const createOrder = async (req, res) => {
     }
 }
 
+//funcion para actualizar stock al crear la orden
+const updateStock = async (productId, quantity) => {
+    try {
+        const stock = await Stock.findOne({ productId });
 
+        if (!stock) {
+            throw new Error(`No se encontró stock para el producto con ID ${productId}`);
+        }
 
+        // Verificar que haya suficiente stock
+        if (stock.quantity < quantity) {
+            throw new Error(`Stock insuficiente para el producto con ID ${productId}`);
+        }
+
+        stock.quantity -= quantity;
+        await stock.save();
+    } catch (error) {
+        throw new Error(`Error al actualizar el stock: ${error.message}`);
+    }
+}
 
 
 //end-point para eliminar
@@ -224,16 +232,66 @@ const updateOrder = async (req, res) => {
     }
 }
 
+//end-point para buscar/listar una order
+const listOrderId = async (req, res) => {
+
+    const orderId = req.params.id
+
+    let page = 1;
+
+    if (req.params.page) {
+        page = parseInt(req.params.page);
+    }
+
+    const itemPerPage = 4;
+
+    const opciones = {
+        page: page,
+        limit: itemPerPage,
+        sort: { _id: -1 },
+        select: ("-password -email -role -__v"),
+        populate: { path: 'shippingAddress', select: '-__v' }
+    };
+
+    try {
+        // Filtrar el saldo por el ID del usuario
+        const order = await Order.paginate({  _id:orderId}, opciones);
+
+        if (!order || order.docs.length === 0) {
+            return res.status(404).json({
+                status: "error",
+                message: "No se encontró direcciones para este usuario"
+            });
+        }
+
+        //buscar el producto._id para obtener el price unitario 
+
+        return res.status(200).send({
+            status: "success",
+            message: "Listado de direcciones del usuario",
+            order: order.docs,
+            totalDocs: order.totalDocs,
+            totalPages: order.totalPages,
+            limit: order.limit,
+            page: order.page,
 
 
+        });
 
-
-//end-point para buscar una order
+    } catch (error) {
+        return res.status(500).json({
+            status: 'error',
+            message: 'Error al listar direcciones',
+            error: error.message
+        });
+    }
+};
 
 
 module.exports = {
     createOrder,
     deleteOrder,
     list,
-    updateOrder
+    updateOrder,
+    listOrderId
 }
