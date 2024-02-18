@@ -21,6 +21,10 @@ const OrderSchema = Schema({
             }
         }
     ],
+    orderNumber:{
+        type:String,
+        
+    },
     status: { 
         type: String, 
         enum: ['pending', 'shipped', 'delivered'], 
