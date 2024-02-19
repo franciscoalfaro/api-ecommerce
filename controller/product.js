@@ -445,6 +445,52 @@ const getProduct = async (req, res) => {
     }
 };
 
+//end-point para listar productos por categorias
+const getProductCategory = async (req, res) => {
+    let page = 1
+    if (req.params.page) {
+        page = req.params.page
+    }
+    page = parseInt(page)
+
+    let itemPerPage = 6
+
+    const opciones = {
+        page: page,
+        limit: itemPerPage,
+        sort: { fecha: -1 }
+    }
+
+
+    try {
+        const categoryId = req.params.id;
+
+        // Buscar la categoría por su ID
+        const category = await Category.findById(categoryId);
+        if (!category) {
+            return res.status(404).json({
+                status: "error",
+                mensaje: "Categoría no encontrada"
+            });
+        }
+
+        // Buscar los productos que tengan la categoría encontrada
+        const products = await Product.paginate({ category: categoryId },opciones);
+
+        return res.status(200).json({
+            status: "success",
+            products
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            mensaje: "Error al buscar los productos de la categoría",
+            error: error.message
+        });
+    }
+};
+
+
 
 module.exports = {
     createProduct,
@@ -455,5 +501,6 @@ module.exports = {
     listProduct,
     deleteProduct,
     updateProduct,
-    getProduct
+    getProduct,
+    getProductCategory
 }

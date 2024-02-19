@@ -35,6 +35,7 @@ router.get("/search/:product/:page?", ProductController.search);
 
 //listar los productos
 router.get("/list/:page?", ProductController.listProduct)
+router.get("/productcategory/:id",check.auth, ProductController.getProductCategory)
 
 //consultar y traer el producto por el id
 router.get("/obtenido/:id", ProductController.getProduct)

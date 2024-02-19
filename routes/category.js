@@ -11,4 +11,6 @@ router.delete("/delete/:id",check.auth, CategoryController.deleteCategory)
 router.get("/list/:page?",check.auth, CategoryController.listCategorys)
 router.get("/listcategorys/",check.auth, CategoryController.listCategorysDrop)
 
+
+
 module.exports=router
