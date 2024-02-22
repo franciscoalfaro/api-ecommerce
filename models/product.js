@@ -27,6 +27,16 @@ const ProductSchema = Schema({
         type: String,
         required: true 
     },
+    offerprice: { 
+        type: String,
+    },
+    standout: { 
+        type: Boolean,
+        default: false
+    },
+    discountPercentage:{
+        type:Number,
+    },
     Autor:{
         type: String,
         required: true

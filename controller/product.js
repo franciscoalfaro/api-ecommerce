@@ -6,6 +6,7 @@ const Category = require("../models/category")
 const Stock = require("../models/stock")
 const mongoosePagination = require('mongoose-paginate-v2')
 const User = require("../models/user")
+const Order = require("../models/order")
 
 
 
@@ -47,6 +48,7 @@ const createProduct = async (req, res) => {
             price: params.price,
             Autor: usuarioPublicacion.name,
             category: existsCategory._id,
+            stock:params.stock
 
         });
 
@@ -229,6 +231,7 @@ const media = (req, res) => {
 const search = async (req, res) => {
     try {
         let busqueda = req.params.product;
+        console.log(busqueda)
 
         busqueda = busqueda.replace(/\+/g, ' ');
 
@@ -247,14 +250,21 @@ const search = async (req, res) => {
             select: '-password', // Excluir campos sensibles si es necesario
         };
 
-        // Utilizar expresiones regulares para realizar una búsqueda insensible a mayúsculas y minúsculas
-        const resultados = await Product.paginate({
+        const categoria = await Category.findOne({ name: { $regex: busqueda, $options: "i" } });
+
+        let query = {
             $or: [
                 { "name": { $regex: busqueda, $options: "i" } },
                 { "description": { $regex: busqueda, $options: "i" } },
                 { "brand": { $regex: busqueda, $options: "i" } },
             ]
-        }, options);
+        };
+
+        if (categoria) {
+            query.$or.push({ "category": categoria._id });
+        }
+
+        const resultados = await Product.paginate(query, options);
 
         return res.status(200).json({
             status: "success",
@@ -264,8 +274,6 @@ const search = async (req, res) => {
             totalDocs: resultados.totalDocs,
             totalPages: resultados.totalPages,
             itemPerPage: resultados.limit
-
-
         });
     } catch (error) {
         return res.status(500).json({
@@ -275,6 +283,7 @@ const search = async (req, res) => {
         });
     }
 };
+
 
 //end-point para listar todos los Products
 const listProduct = async (req, res) => {
@@ -458,7 +467,8 @@ const getProductCategory = async (req, res) => {
     const opciones = {
         page: page,
         limit: itemPerPage,
-        sort: { fecha: -1 }
+        sort: { fecha: -1 },
+        
     }
 
 
@@ -479,7 +489,13 @@ const getProductCategory = async (req, res) => {
 
         return res.status(200).json({
             status: "success",
-            products
+            products:products.docs,
+            page: products.page,
+            totalDocs: products.totalDocs,
+            totalPages: products.totalPages,
+            itemPerPage: products.limit,
+            categoryName: category.name
+
         });
     } catch (error) {
         return res.status(500).json({
@@ -489,6 +505,110 @@ const getProductCategory = async (req, res) => {
         });
     }
 };
+
+//
+const BestSellingProducts = async (req, res) => {
+    try {
+        let page = 1;
+        if (req.query.page) {
+            page = parseInt(req.query.page);
+        }
+
+        let limit = 10;
+        if (req.query.limit) {
+            limit = parseInt(req.query.limit);
+        }
+
+        // Obtener solo los IDs de los productos más vendidos
+        const products = await Order.aggregate([
+            { $match: { status: 'delivered' } },
+            { $unwind: "$products" },
+            { $group: { _id: "$products.product", totalQuantity: { $sum: "$products.quantity" } } },
+            { $sort: { totalQuantity: -1 } },
+            { $limit: limit * page } // Limitar a los productos más vendidos de todas las páginas
+        ]);
+
+        // Obtener los detalles de los productos más vendidos utilizando la paginación de Mongoose
+        const bestSellingProducts = await Product.paginate({ _id: { $in: products.map(p => p._id) } }, { page, limit });
+
+        return res.status(200).json({
+            status: "success",
+            products: bestSellingProducts.docs,
+
+            page: bestSellingProducts.page,
+            totalDocs: bestSellingProducts.totalDocs,
+            totalPages: bestSellingProducts.totalPages,
+            itemPerPage: bestSellingProducts.limit,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            message: "Error al obtener los productos más vendidos",
+            error: error.message
+        });
+    }
+};
+
+//obtener productos que estan en oferta(offerprice), 
+const offerPrice = async (req, res) => {
+    let page = 1;
+    if (req.params.page) {
+        page = parseInt(req.params.page);
+    }
+
+    let itemPerPage = 6;
+
+    const options = {
+        page: page,
+        limit: itemPerPage,
+        sort: { fecha: -1 },
+        populate: [
+            { path: 'category', select: 'name' },
+            { path: 'stock', select: 'quantity location' }
+        ]
+    };
+
+    try {
+        const products = await Product.paginate({ offerprice: { $exists: true, $ne: null } }, options);
+
+        if (!products) {
+            return res.status(404).json({
+                status: "error",
+                message: "No se han encontrado productos en oferta"
+            });
+        }
+
+        // Calcular el descuento en porcentaje al vuelo
+        products.docs.forEach(product => {
+            const price = parseFloat(product.price);
+            const offerprice = parseFloat(product.offerprice);
+            const discountPercentage = parseInt(((price - offerprice) / price) * 100);
+            product.discountPercentage = isNaN(discountPercentage) ? 0 : discountPercentage;
+        });
+
+        return res.status(200).send({
+            status: "success",
+            message: "Productos encontrados",
+            products: products.docs,
+            page: products.page,
+            totalDocs: products.totalDocs,
+            totalPages: products.totalPages,
+            itemPerPage: products.limit
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: 'error',
+            message: 'Error al listar los productos en oferta',
+            error: error.message,
+        });
+    }
+};
+
+
+
+
+
+
 
 
 
@@ -502,5 +622,7 @@ module.exports = {
     deleteProduct,
     updateProduct,
     getProduct,
-    getProductCategory
+    getProductCategory,
+    BestSellingProducts,
+    offerPrice
 }

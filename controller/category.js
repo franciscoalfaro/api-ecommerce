@@ -140,6 +140,8 @@ const updateCategory = async (req, res) => {
     }
 };
 
+
+//list categorias de productos esto para el usuario que administra
 const listCategorys = async (req, res) => {
     const userId = req.user.id; // Suponiendo que tienes el ID del usuario en el token
     let page = 1;
@@ -178,13 +180,13 @@ const listCategorys = async (req, res) => {
     }
 };
 
+//
 const listCategorysDrop = async (req, res) => {
-    const userId = req.user.id; // Suponiendo que tienes el ID del usuario en el token
 
     try {
 
         // Buscar todas las categorías asociadas al usuario
-        const categorys = await Category.paginate({ userId} );
+        const categorys = await Category.paginate();
 
         return res.status(200).json({
             status: 'success',

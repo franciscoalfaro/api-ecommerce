@@ -9,9 +9,9 @@ const Address = require("../models/address")
 const Order = require("../models/order")
 
 
-//end-point para crear stock
+//end-point para crear order
 const createOrder = async (req, res) => {
-    const { userId, products, shippingAddress, totalPrice } = req.body;
+    const { userId, products, shippingAddress } = req.body;
 
     try {
         // Verificar que el usuario existe
@@ -23,6 +23,8 @@ const createOrder = async (req, res) => {
             });
         }
 
+        let totalPrice = 0;  // Inicializamos totalPrice
+
         // Verificar que los productos existen
         for (const productData of products) {
             const product = await Product.findById(productData.product);
@@ -32,6 +34,11 @@ const createOrder = async (req, res) => {
                     message: "Producto no encontrado"
                 });
             }
+            
+            // Sumamos el precio unitario multiplicado por la cantidad de productos
+            totalPrice += productData.quantity * productData.priceunitary;
+
+            console.log(totalPrice)
 
             // Actualizar el stock
             await updateStock(productData.product, productData.quantity);
@@ -51,7 +58,7 @@ const createOrder = async (req, res) => {
             userId,
             products,
             shippingAddress,
-            totalPrice,
+            totalPrice
         });
 
         // Guardar la orden
@@ -71,6 +78,7 @@ const createOrder = async (req, res) => {
         });
     }
 }
+
 
 //funcion para actualizar stock al crear la orden
 const updateStock = async (productId, quantity) => {
