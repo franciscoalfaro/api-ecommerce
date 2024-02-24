@@ -19,6 +19,9 @@ const ProductSchema = Schema({
         type: String, 
         required: true 
     },
+    gender: { 
+        type: String, 
+    },
     size: { 
         type: String, 
         required: true 
