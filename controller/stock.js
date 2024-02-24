@@ -43,7 +43,11 @@ const createStock = async (req, res) => {
             location,
         });
 
+        // Guarda el nuevo stock
         await newStock.save();
+
+        // Actualiza el producto con la referencia al nuevo stock
+        await Product.findByIdAndUpdate(productId, { stock: newStock._id });
 
         return res.status(200).json({
             status: "success",
@@ -60,7 +64,6 @@ const createStock = async (req, res) => {
         });
     }
 }
-
 
 
 //end-point para eliminar stock

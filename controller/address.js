@@ -115,7 +115,7 @@ const updateAddress = async (req, res) => {
             });
         }
 
-        const redActualizada = await Address.findByIdAndUpdate(
+        const addressUpdates = await Address.findByIdAndUpdate(
             id,
             {direccion , numero,codigoPostal ,region ,cuidad ,comuna },
             { new: true }
@@ -123,8 +123,8 @@ const updateAddress = async (req, res) => {
 
         return res.status(200).json({
             status: 'success',
-            message: 'Red actualizada correctamente',
-            redActualizada
+            message: 'address Updates correctamente',
+            addressUpdates
         });
     } catch (error) {
         return res.status(500).json({

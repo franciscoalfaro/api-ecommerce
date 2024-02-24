@@ -70,6 +70,8 @@ const createProduct = async (req, res) => {
     }
 }
 
+
+
 //end-point para subir imagenes a los Products
 const upload = async (req, res) => {
     // Sacar el ID del producto
@@ -298,7 +300,7 @@ const listProduct = async (req, res) => {
     const opciones = {
         page: page,
         limit: itemPerPage,
-        sort: { fecha: -1 },
+        sort: { createdAt: -1 },
         populate: [
             { path: 'category', select: 'name' },
             { path: 'stock', select: 'quantity location' }
@@ -506,7 +508,7 @@ const getProductCategory = async (req, res) => {
     }
 };
 
-//
+//mas vendidos
 const BestSellingProducts = async (req, res) => {
     try {
         let page = 1;

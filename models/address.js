@@ -26,7 +26,7 @@ const AddressSchema = Schema({
         type:String,
         require:true
     },
-    cuidad:{
+    ciudad:{
         type:String,
         require:true
     },

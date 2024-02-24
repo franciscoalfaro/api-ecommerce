@@ -48,8 +48,11 @@ const ProductSchema = Schema({
     },
     stock: {
         type: Schema.Types.ObjectId,
-        ref: 'Stock',
-        required: true
+        ref: 'Stock'
+    },
+    createdAt: { 
+        type: Date, 
+        default: Date.now 
     },
     images: [{   
         filename: String,
