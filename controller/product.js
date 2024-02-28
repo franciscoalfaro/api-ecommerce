@@ -149,7 +149,8 @@ const upload = async (req, res) => {
 };
 
 
-//end-point para eliminar una o varias imagenes. se identifica por id de la imagen 
+//end-point para eliminar una o varias imagenes. se identifica por id de la imagen  issue se debe de eliminar imagen del servidor. 
+
 const deleteImages = async (req, res) => {
     try {
         const productId = req.params.id;
@@ -314,6 +315,16 @@ const listProduct = async (req, res) => {
             status: "error",
             message: "no se han encontrado products"
         })
+
+        
+
+        // Calcular el descuento en porcentaje 
+        products.docs.forEach(product => {
+            const price = parseFloat(product.price);
+            const offerprice = parseFloat(product.offerprice);
+            product.discountPercentage = offerprice !== 0 ? parseInt(((price - offerprice) / price) * 100) : 0;
+
+        });
 
 
         return res.status(200).send({
@@ -571,9 +582,16 @@ const offerPrice = async (req, res) => {
     };
 
     try {
-        const products = await Product.paginate({ offerprice: { $exists: true, $ne: null } }, options);
+        // Obtener solo los IDs de los productos en oferta
+        const productsInOffer = await Product.aggregate([
+            { $match: { $expr: { $and: [{ $ne: ["$offerprice", "null"] }, { $ne: ["$offerprice", "0"] },{ $ne: ["$offerprice", ""] }] } } },
+            { $group: { _id: "$_id" } }
+        ]);
 
-        if (!products) {
+        // Obtener los detalles de los productos en oferta utilizando la paginación de Mongoose
+        const products = await Product.paginate({ _id: { $in: productsInOffer.map(p => p._id) } }, options);
+
+        if (!products.docs || products.docs.length === 0) {
             return res.status(404).json({
                 status: "error",
                 message: "No se han encontrado productos en oferta"
@@ -608,6 +626,68 @@ const offerPrice = async (req, res) => {
 
 
 
+//productos destacados
+const featuredProducts = async (req, res) => {
+    try {
+        let page = 1;
+        if (req.query.page) {
+            page = parseInt(req.query.page);
+        }
+
+        let limit = 10;
+        if (req.query.limit) {
+            limit = parseInt(req.query.limit);
+        }
+
+        const options = {
+            populate: [
+                { path: 'category', select: 'name' },
+                { path: 'stock', select: 'quantity location' }
+            ]
+        };
+
+        // Obtener solo los IDs de los productos destacados
+        const products = await Product.aggregate([
+            { $match: { standout: true } },
+            { $project: { _id: 1 } }, // Proyectar solo el campo _id
+            { $lookup: { from: "products", localField: "_id", foreignField: "_id", as: "product" } },
+            { $unwind: "$product" },
+            { $sort: { totalQuantity: -1 } },
+            { $limit: limit * page }
+        ]);
+
+        // Obtener los detalles de los productos destacads utilizando la paginación de Mongoose
+        const featuredProducts = await Product.paginate({ _id: { $in: products.map(p => p._id) } }, { page, limit,options })
+
+                // Calcular el descuento en porcentaje al vuelo
+                featuredProducts.docs.forEach(product => {
+                    const price = parseFloat(product.price);
+                    const offerprice = parseFloat(product.offerprice);
+                    product.discountPercentage = offerprice !== 0 ? parseInt(((price - offerprice) / price) * 100) : 0;
+        
+                });
+
+        return res.status(200).json({
+            status: "success",
+            products: featuredProducts.docs,
+
+            page: featuredProducts.page,
+            totalDocs: featuredProducts.totalDocs,
+            totalPages: featuredProducts.totalPages,
+            itemPerPage: featuredProducts.limit,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            message: "Error al obtener los productos más vendidos",
+            error: error.message
+        });
+    }
+};
+
+
+
+
 
 
 
@@ -626,5 +706,6 @@ module.exports = {
     getProduct,
     getProductCategory,
     BestSellingProducts,
-    offerPrice
+    offerPrice,
+    featuredProducts
 }

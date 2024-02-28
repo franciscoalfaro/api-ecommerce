@@ -37,14 +37,20 @@ router.get("/search/:product/:page?", ProductController.search);
 router.get("/list/:page?", ProductController.listProduct)
 router.get("/productcategory/:id/:page?", ProductController.getProductCategory)
 
-//consultar y traer el producto por el id
-router.get("/obtenido/:id", ProductController.getProduct)
 
+//ofertas
 router.get("/offers/:page?", ProductController.offerPrice)
+
+//producto destacado
+
+router.get("/featuredproduct/:page?", ProductController.featuredProducts)
 
 //productos mas vendidos
 router.get("/bestselling/:page?", ProductController.BestSellingProducts)
 
+
+//consultar y traer el producto por el id
+router.get("/obtenido/:id", ProductController.getProduct)
 
 
 
