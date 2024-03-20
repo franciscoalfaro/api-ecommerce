@@ -48,7 +48,7 @@ const createProduct = async (req, res) => {
             price: params.price,
             Autor: usuarioPublicacion.name,
             category: existsCategory._id,
-            stock:params.stock
+            stock: params.stock
 
         });
 
@@ -267,16 +267,30 @@ const search = async (req, res) => {
             query.$or.push({ "category": categoria._id });
         }
 
-        const resultados = await Product.paginate(query, options);
+        const productsInOffer = await Product.aggregate([
+            { $match: { $expr: { $and: [{ $ne: ["$offerprice", null] }, { $ne: ["$offerprice", "0"] },{ $ne: ["$offerprice", ""] }] } } },
+            { $group: { _id: "$_id" } }
+        ]);
+
+        const products = await Product.paginate(query,{ _id: { $in: productsInOffer.map(p => p._id) } }, options);
+
+
+        // Calcular el descuento en porcentaje
+        products.docs.forEach(product => {
+            const price = parseFloat(product.price);
+            const offerprice = parseFloat(product.offerprice);
+            const discountPercentage = offerprice ? Math.round(((price - offerprice) / price) * 100) : 0; // Asegúrate de que no haya división por cero
+            product.discountPercentage = discountPercentage;
+        });
 
         return res.status(200).json({
             status: "success",
             message: "Búsqueda completada",
-            resultados: resultados.docs,
-            page: resultados.page,
-            totalDocs: resultados.totalDocs,
-            totalPages: resultados.totalPages,
-            itemPerPage: resultados.limit
+            products: products.docs,
+            page: products.page,
+            totalDocs: products.totalDocs,
+            totalPages: products.totalPages,
+            itemPerPage: products.limit
         });
     } catch (error) {
         return res.status(500).json({
@@ -286,6 +300,7 @@ const search = async (req, res) => {
         });
     }
 };
+
 
 
 //end-point para listar todos los Products
@@ -316,7 +331,7 @@ const listProduct = async (req, res) => {
             message: "no se han encontrado products"
         })
 
-        
+
 
         // Calcular el descuento en porcentaje 
         products.docs.forEach(product => {
@@ -481,7 +496,7 @@ const getProductCategory = async (req, res) => {
         page: page,
         limit: itemPerPage,
         sort: { fecha: -1 },
-        
+
     }
 
 
@@ -498,11 +513,11 @@ const getProductCategory = async (req, res) => {
         }
 
         // Buscar los productos que tengan la categoría encontrada
-        const products = await Product.paginate({ category: categoryId },opciones);
+        const products = await Product.paginate({ category: categoryId }, opciones);
 
         return res.status(200).json({
             status: "success",
-            products:products.docs,
+            products: products.docs,
             page: products.page,
             totalDocs: products.totalDocs,
             totalPages: products.totalPages,
@@ -584,7 +599,7 @@ const offerPrice = async (req, res) => {
     try {
         // Obtener solo los IDs de los productos en oferta
         const productsInOffer = await Product.aggregate([
-            { $match: { $expr: { $and: [{ $ne: ["$offerprice", "null"] }, { $ne: ["$offerprice", "0"] },{ $ne: ["$offerprice", ""] }] } } },
+            { $match: { $expr: { $and: [{ $ne: ["$offerprice", "null"] }, { $ne: ["$offerprice", "0"] }, { $ne: ["$offerprice", ""] }] } } },
             { $group: { _id: "$_id" } }
         ]);
 
@@ -657,15 +672,15 @@ const featuredProducts = async (req, res) => {
         ]);
 
         // Obtener los detalles de los productos destacads utilizando la paginación de Mongoose
-        const featuredProducts = await Product.paginate({ _id: { $in: products.map(p => p._id) } }, { page, limit,options })
+        const featuredProducts = await Product.paginate({ _id: { $in: products.map(p => p._id) } }, { page, limit, options })
 
-                // Calcular el descuento en porcentaje al vuelo
-                featuredProducts.docs.forEach(product => {
-                    const price = parseFloat(product.price);
-                    const offerprice = parseFloat(product.offerprice);
-                    product.discountPercentage = offerprice !== 0 ? parseInt(((price - offerprice) / price) * 100) : 0;
-        
-                });
+        // Calcular el descuento en porcentaje al vuelo
+        featuredProducts.docs.forEach(product => {
+            const price = parseFloat(product.price);
+            const offerprice = parseFloat(product.offerprice);
+            product.discountPercentage = offerprice !== 0 ? parseInt(((price - offerprice) / price) * 100) : 0;
+
+        });
 
         return res.status(200).json({
             status: "success",

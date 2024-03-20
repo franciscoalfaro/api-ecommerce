@@ -63,7 +63,7 @@ const register = async (req, res) => {
         const userStored = await user_to_save.save();
 
         // Devolver el resultado
-        return res.status(200).json({
+        return res.status(201).json({
             status: "success",
             message: "Usuario registrado correctamente",
             user: userStored,
@@ -111,7 +111,7 @@ const login = async (req, res) => {
 
         return res.status(200).json({
             status: "success",
-            message: "Te has identificado de forma correcta.",
+            message: "Te has identificado de forma correcta",
             user: {
                 id: user._id,
                 name: user.name,
