@@ -268,11 +268,11 @@ const search = async (req, res) => {
         }
 
         const productsInOffer = await Product.aggregate([
-            { $match: { $expr: { $and: [{ $ne: ["$offerprice", null] }, { $ne: ["$offerprice", "0"] },{ $ne: ["$offerprice", ""] }] } } },
+            { $match: { $expr: { $and: [{ $ne: ["$offerprice", null] }, { $ne: ["$offerprice", "0"] }, { $ne: ["$offerprice", ""] }] } } },
             { $group: { _id: "$_id" } }
         ]);
 
-        const products = await Product.paginate(query,{ _id: { $in: productsInOffer.map(p => p._id) } }, options);
+        const products = await Product.paginate(query, { _id: { $in: productsInOffer.map(p => p._id) } }, options);
 
 
         // Calcular el descuento en porcentaje
@@ -460,14 +460,21 @@ const getProduct = async (req, res) => {
             { path: 'stock', select: 'quantity location' }
         ]);
 
-
-
+        // Verificar si el producto existe
         if (!product) {
             return res.status(404).json({
                 status: "error",
-                mensaje: "producto no encontrado"
+                message: "Producto no encontrado"
             });
         }
+
+        // Calcular el descuento en porcentaje 
+        const price = parseFloat(product.price);
+        const offerprice = parseFloat(product.offerprice);
+        const discountPercentage = offerprice !== 0 ? parseInt(((price - offerprice) / price) * 100) : 0;
+
+        // Agregar el descuento al objeto del producto
+        product.discountPercentage = discountPercentage;
 
         return res.status(200).json({
             status: "success",
@@ -476,11 +483,12 @@ const getProduct = async (req, res) => {
     } catch (error) {
         return res.status(500).json({
             status: "error",
-            mensaje: "Error al buscar el producto",
+            message: "Error al buscar el producto",
             error: error.message
         });
     }
 };
+
 
 //end-point para listar productos por categorias
 const getProductCategory = async (req, res) => {
@@ -514,6 +522,14 @@ const getProductCategory = async (req, res) => {
 
         // Buscar los productos que tengan la categoría encontrada
         const products = await Product.paginate({ category: categoryId }, opciones);
+
+        // Calcular el descuento en porcentaje 
+        products.docs.forEach(product => {
+            const price = parseFloat(product.price);
+            const offerprice = parseFloat(product.offerprice);
+            product.discountPercentage = offerprice !== 0 ? parseInt(((price - offerprice) / price) * 100) : 0;
+
+        });
 
         return res.status(200).json({
             status: "success",
