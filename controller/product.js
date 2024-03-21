@@ -504,6 +504,10 @@ const getProductCategory = async (req, res) => {
         page: page,
         limit: itemPerPage,
         sort: { fecha: -1 },
+        populate: [
+            { path: 'category', select: 'name' },
+            { path: 'stock', select: 'quantity location' }
+        ]
 
     }
 
