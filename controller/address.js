@@ -11,9 +11,9 @@ const createAddress = async (req, res) => {
     try {
         const params = req.body;
         const userId = req.user.id;
-        console.log(params)
+        console.log('data',params)
 
-        if (!params.direccion || !params.numero || !params.region || !params.cuidad || !params.comuna) {
+        if (!params.direccion || !params.numero || !params.nombre || !params.phone || !params.region || !params.ciudad || !params.comuna) {
             return res.status(400).json({
                 status: "Error",
                 message: "Faltan datos por enviar",
@@ -33,10 +33,12 @@ const createAddress = async (req, res) => {
         const newAddress = await Address.create({
             userId: userId,
             direccion: params.direccion,
+            nombre:params.nombre || 'default',
             numero: params.numero,
+            phone:params.phone,
             codigoPostal: params.codigoPostal   || '',
             region: params.region,
-            cuidad: params.cuidad,
+            ciudad: params.ciudad,
             comuna: params.comuna
         });
 
@@ -99,42 +101,61 @@ const deleteAddress = async (req, res) => {
 
 //end-point para actualizar direcciones
 const updateAddress = async (req, res) => {
-    const { id } = req.params; // ID de la red a actualizar
-    const { direccion , numero , region , codigoPostal , cuidad , comuna } = req.body; // Nuevos datos de la red 
+    const { id } = req.params; // ID de la dirección a actualizar
+    const UserId = req.user.id; // ID del usuario autenticado
+    console.log(req.body)
+    
+    const { direccion, nombre,phone, numero, region, codigoPostal, ciudad, comuna } = req.body; // Nuevos datos de la dirección 
 
     try {
-
-        // Buscar la red por su ID
-
-        const existsAddress = await Address.findOne({ direccion });
-  
-        if (existsAddress && existsAddress._id.toString() !== id) {
-            return res.status(409).json({
+        // Buscar la dirección por su ID
+        const existingAddress = await Address.findById(id);
+        if (!existingAddress) {
+            return res.status(404).json({
                 status: 'error',
-                message: 'la direccion ya esta siendo utilizado verifica la informacion'
+                message: 'La dirección no existe',
+            });
+        }
+      
+
+        // Verificar si el usuario autenticado es el propietario de la dirección
+        if (existingAddress.userId.toString() !== UserId.toString()) {
+            return res.status(403).json({
+                status: 'error',
+                message: 'No tienes permiso para actualizar esta dirección',
             });
         }
 
+        // Verificar si la dirección ya está siendo utilizada por otra dirección
+        const existsAddress = await Address.findOne({ direccion, _id: { $ne: id } });
+        if (existsAddress) {
+            return res.status(409).json({
+                status: 'error',
+                message: 'La dirección ya está siendo utilizada, verifica la información',
+            });
+        }
+
+        // Actualizar la dirección
         const addressUpdates = await Address.findByIdAndUpdate(
             id,
-            {direccion , numero,codigoPostal ,region ,cuidad ,comuna },
+            { direccion, nombre, numero,phone, codigoPostal, region, ciudad, comuna },
             { new: true }
         );
 
         return res.status(200).json({
             status: 'success',
-            message: 'address Updates correctamente',
-            addressUpdates
+            message: 'Dirección actualizada correctamente',
+            addressUpdates,
         });
     } catch (error) {
         return res.status(500).json({
             status: 'error',
-            message: 'Error al actualizar la red',
-            error: error.message
+            message: 'Error al actualizar la dirección',
+            error: error.message,
         });
     }
+};
 
-}
 
 //este end-poit es para listar direcciones del usuario logueado
 const listAddress = async (req, res) => {
@@ -146,7 +167,7 @@ const listAddress = async (req, res) => {
         page = parseInt(req.params.page);
     }
 
-    const itemPerPage = 4;
+    const itemPerPage = 3;
 
     const opciones = {
         page: page,

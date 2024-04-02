@@ -7,6 +7,9 @@ const AddressSchema = Schema({
         ref:'User',
         require:true
     },
+    nombre:{
+        type:String        
+    },
     direccion:{
         type:String,
         require:true

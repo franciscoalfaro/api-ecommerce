@@ -1,5 +1,7 @@
 //importar modulos
 const mongoosePagination = require('mongoose-paginate-v2')
+const bcrypt = require("bcrypt")
+const nodemailer = require('nodemailer');
 
 //importar modelos
 const Stock = require("../models/stock")
@@ -7,9 +9,10 @@ const Product = require("../models/product")
 const User = require("../models/user")
 const Address = require("../models/address")
 const Order = require("../models/order")
+const Cart = require("../models/cart")
 
 
-//end-point para crear order
+//end-point para crear orden usuario registrado
 const createOrder = async (req, res) => {
     const { userId, products, shippingAddress } = req.body;
 
@@ -22,6 +25,7 @@ const createOrder = async (req, res) => {
                 message: "Usuario no encontrado"
             });
         }
+        
 
         let totalPrice = 0;  // Inicializamos totalPrice
 
@@ -70,8 +74,12 @@ const createOrder = async (req, res) => {
             orderNumber
         });
 
+        const cartDelete = await Cart.findOneAndDelete({ userId });
+
         // Guardar la orden
         await order.save();
+
+        await enviarCorreoConfirmacion(email, orderNumber)
 
         return res.status(200).json({
             status: "success",
@@ -86,6 +94,155 @@ const createOrder = async (req, res) => {
             error: error.message
         });
     }
+}
+
+//end-point para crear orden usuario no registrado, se debe de crear usuario antes de guardar la direccion y antes de generar la orden con los datos requeridos
+const createOrderForGuest = async (req, res) => {
+    const { name, surname, email, products } = req.body;
+    const { direccion, numero, phone, codigoPostal, region, ciudad, comuna } = req.body;
+
+    console.log(req.body)
+
+    try {
+        // Buscar el usuario por su correo electrónico
+        let user = await User.findOne({ email });
+
+        // Si el usuario no existe, crea uno nuevo
+        if (!user) {
+            // Crear una contraseña aleatoria para el nuevo usuario
+            const randomPassword = Math.random().toString(36).slice(-8);
+            const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+            // Crear el nuevo usuario
+            user = new User({
+                name,
+                surname,
+                nick: email, // Opcional: podrías usar el email como nombre de usuario
+                email,
+                password: hashedPassword // Asigna la contraseña aleatoria
+            });
+
+            // Guardar el nuevo usuario en la base de datos
+            user = await user.save();
+        }
+
+        // Buscar si la dirección ya existe para el usuario
+        let address = await Address.findOne({
+            userId: user._id,
+            direccion,
+            numero,
+            phone,
+            codigoPostal,
+            region,
+            ciudad,
+            comuna
+        });
+        const nameDefault = 'default'
+
+        // Si la dirección no existe, crear una nueva
+        if (!address) {
+            // Crear la dirección asociada al usuario
+            const newAddress = new Address({
+                userId: user._id,
+                nombre:nameDefault,
+                direccion,
+                numero,
+                phone,
+                codigoPostal,
+                region,
+                ciudad,
+                comuna
+            });
+
+            // Guardar la dirección en la base de datos
+            address = await newAddress.save();
+        }
+
+        // Calcular el total de la orden sumando los precios de los productos
+        let totalPrice = 0;
+        for (const productData of products) {
+            const product = await Product.findById(productData.product);
+            if (!product) {
+                return res.status(404).json({
+                    status: "error",
+                    message: "Producto no encontrado"
+                });
+            }
+            totalPrice += productData.quantity * product.price;
+        }
+
+        // Generar número de orden aleatorio
+        let orderNumber = Math.floor(Math.random() * 1000000).toString();
+        let orderExists = await Order.findOne({ orderNumber });
+
+        // Si el número de orden ya existe, generar uno nuevo
+        while (orderExists) {
+            orderNumber = Math.floor(Math.random() * 1000000).toString();
+            orderExists = await Order.findOne({ orderNumber });
+        }
+
+        // Crear la orden
+        const newOrder = new Order({
+            userId: user._id,
+            products,
+            shippingAddress: address._id,
+            totalPrice,
+            orderNumber
+        });
+
+        // Guardar la orden en la base de datos
+        const savedOrder = await newOrder.save();
+
+        // Enviar correo de confirmación
+        await enviarCorreoConfirmacion(email, orderNumber);
+
+        // Retornar la respuesta con la orden creada
+        return res.status(200).json({
+            status: "success",
+            message: "Orden creada correctamente",
+            order: savedOrder
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            message: "Error al crear la orden",
+            error: error.message
+        });
+    }
+};
+
+
+
+// Función para enviar correo de confirmacion de compra con numero de orden
+async function enviarCorreoConfirmacion(email, orderNumber) {
+    const emailUser = process.env.EMAIL_USER;
+    const emailPassword = process.env.EMAIL_PASSWORD;
+
+    const transporter = nodemailer.createTransport({
+        host: 'smtp.ionos.com',
+        port: 587,
+        secure: false,
+        auth: {
+            user: emailUser, 
+            pass: emailPassword 
+        }
+    });
+    
+
+    const mailOptions = {
+        from: emailUser,
+        to: email,
+        subject: '¡Tu orden ha sido generada correctamente!',
+        html: `
+            <h1>¡Tu orden ha sido generada correctamente!</h1>
+            <p>Tu número de orden es: <strong>${orderNumber}</strong>.</p>
+            <p>Puedes hacer seguimiento de tu pedido en <a href="http://localhost:5173/seguimiento">http://localhost:5173/seguimiento</a>.</p>
+            <div>
+                <img src="https://blogapi.comogasto.com/api/articulo/media/articulo-1711754612310-tiendagaston.jpeg" alt="Banner de promoción" style="max-width: 100%; height: auto;">
+            </div>
+        `
+    };
+    await transporter.sendMail(mailOptions);
 }
 
 
@@ -111,7 +268,6 @@ const updateStock = async (productId, quantity) => {
         throw new Error(`Error al actualizar el stock: ${error.message}`);
     }
 }
-
 
 
 //end-point para eliminar orden
@@ -363,5 +519,6 @@ module.exports = {
     list,
     updateOrder,
     listOrderId,
-    cancelOrder
+    cancelOrder,
+    createOrderForGuest
 }

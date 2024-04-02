@@ -13,7 +13,9 @@ const Cart = require("../models/cart.js")
 
 //end-point para crear carrito
 const createCart = async (req, res) => {
-    const { userId, items } = req.body;
+    const { items } = req.body;
+    const userId = req.user.id
+    
 
     try {
         // Verificar si el usuario existe
@@ -22,6 +24,15 @@ const createCart = async (req, res) => {
             return res.status(404).json({
                 status: 'error',
                 message: 'Usuario no encontrado'
+            });
+        }
+
+        // Verificar si ya existe un carrito para este usuario
+        const existingCart = await Cart.findOne({ userId: userId });
+        if (existingCart) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Ya existe un carrito para este usuario'
             });
         }
 
@@ -52,9 +63,11 @@ const createCart = async (req, res) => {
 
 
 
+
 //end-point para eliminar
 const deleteCart = async (req, res) => {
-    const { userId } = req.params;
+    const { userId } = req.user.id;
+    
 
     try {
         // Buscar el carrito del usuario por su ID

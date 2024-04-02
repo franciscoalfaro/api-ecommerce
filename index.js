@@ -26,6 +26,7 @@ const ProductRoutes = require("./routes/product")
 const CategoryRoutes = require("./routes/category")
 const StockRoutes = require("./routes/stock")
 const OrderRoutes = require("./routes/order")
+const CartRoutes = require("./routes/cart")
 
 //recovery
 const RecoveryRouter = require("./routes/recovery")
@@ -39,6 +40,7 @@ app.use("/api/product", ProductRoutes)
 app.use("/api/category", CategoryRoutes)
 app.use("/api/stock", StockRoutes)
 app.use("/api/order", OrderRoutes)
+app.use("/api/cart", CartRoutes)
 
 //recovery
 app.use("/api/recovery", RecoveryRouter)

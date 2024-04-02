@@ -558,13 +558,15 @@ const getProductCategory = async (req, res) => {
 const BestSellingProducts = async (req, res) => {
     try {
         let page = 1;
-        if (req.query.page) {
-            page = parseInt(req.query.page);
-        }
-
         let limit = 10;
-        if (req.query.limit) {
-            limit = parseInt(req.query.limit);
+        const opciones = {
+            page: page,
+            limit: limit,
+            sort: { fecha: -1 },
+            populate: [
+                { path: 'category', select: 'name' },
+                { path: 'stock', select: 'quantity location' }
+            ]
         }
 
         // Obtener solo los IDs de los productos más vendidos
@@ -577,12 +579,18 @@ const BestSellingProducts = async (req, res) => {
         ]);
 
         // Obtener los detalles de los productos más vendidos utilizando la paginación de Mongoose
-        const bestSellingProducts = await Product.paginate({ _id: { $in: products.map(p => p._id) } }, { page, limit });
+        const bestSellingProducts = await Product.paginate({ _id: { $in: products.map(p => p._id) } }, opciones);
+
+        // Calcular el descuento en porcentaje para cada producto
+        bestSellingProducts.docs.forEach(product => {
+            const price = parseFloat(product.price);
+            const offerprice = parseFloat(product.offerprice);
+            product.discountPercentage = offerprice !== 0 ? parseInt(((price - offerprice) / price) * 100) : 0;
+        });
 
         return res.status(200).json({
             status: "success",
             products: bestSellingProducts.docs,
-
             page: bestSellingProducts.page,
             totalDocs: bestSellingProducts.totalDocs,
             totalPages: bestSellingProducts.totalPages,
@@ -596,6 +604,7 @@ const BestSellingProducts = async (req, res) => {
         });
     }
 };
+
 
 //obtener productos que estan en oferta(offerprice), 
 const offerPrice = async (req, res) => {
