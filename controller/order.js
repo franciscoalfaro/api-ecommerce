@@ -14,8 +14,11 @@ const Cart = require("../models/cart")
 
 //end-point para crear orden usuario registrado
 const createOrder = async (req, res) => {
-    const { userId, products, shippingAddress } = req.body;
-
+    const { products, shippingAddress } = req.body;
+    const userId = req.user.id
+    
+    const email = req.user.email
+ 
     try {
         // Verificar que el usuario existe
         const user = await User.findById(userId);
