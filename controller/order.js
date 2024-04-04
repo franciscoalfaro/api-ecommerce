@@ -45,6 +45,9 @@ const createOrder = async (req, res) => {
             // Sumamos el precio unitario multiplicado por la cantidad de productos
             totalPrice += productData.quantity * productData.priceunitary;
 
+         
+
+
             // Actualizar el stock
             await updateStock(productData.product, productData.quantity);
         }
@@ -103,8 +106,6 @@ const createOrder = async (req, res) => {
 const createOrderForGuest = async (req, res) => {
     const { name, surname, email, products } = req.body;
     const { direccion, numero, phone, codigoPostal, region, ciudad, comuna } = req.body;
-
-    console.log(req.body)
 
     try {
         // Buscar el usuario por su correo electrónico
@@ -171,7 +172,7 @@ const createOrderForGuest = async (req, res) => {
                     message: "Producto no encontrado"
                 });
             }
-            totalPrice += productData.quantity * product.price;
+            totalPrice += productData.quantity * productData.priceunitary;
         }
 
         // Generar número de orden aleatorio
