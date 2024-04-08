@@ -15,7 +15,6 @@ const Cart = require("../models/cart.js")
 const createCart = async (req, res) => {
     const { items } = req.body;
     const userId = req.user.id
-    
 
     try {
         // Verificar si el usuario existe
@@ -28,33 +27,44 @@ const createCart = async (req, res) => {
         }
 
         // Verificar si ya existe un carrito para este usuario
-        const existingCart = await Cart.findOne({ userId: userId });
-        if (existingCart) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Ya existe un carrito para este usuario'
+        let cart = await Cart.findOne({ userId: userId });
+
+        if (cart) {
+            // Si el carrito ya existe, agregar los nuevos elementos al carrito
+            for (const newItem of items) {
+                const existingItem = cart.items.find(item => item.product.equals(newItem.product));
+                if (existingItem) {
+                    // Si el producto ya existe en el carrito, aumentar la cantidad
+                    existingItem.quantity += newItem.quantity;
+                } else {
+                    // Si el producto no existe en el carrito, agregarlo
+                    cart.items.push(newItem);
+                }
+            }
+        } else {
+            // Si el carrito no existe, crear uno nuevo
+            cart = new Cart({
+                userId,
+                items
             });
         }
 
-        // Crear el carrito
-        const cart = new Cart({
-            userId,
-            items
-        });
+        // Eliminar el campo _id adicional de cada elemento de items
+        cart.items.forEach(item => delete item._id);
 
         // Guardar el carrito
         await cart.save();
 
         return res.status(200).json({
             status: "success",
-            message: "Carrito creado correctamente",
+            message: "Carrito creado o actualizado correctamente",
             cart: cart
         });
 
     } catch (error) {
         return res.status(500).json({
             status: 'error',
-            message: 'Error al crear el carrito',
+            message: 'Error al crear o actualizar el carrito',
             error: error.message
         });
     }
@@ -64,10 +74,11 @@ const createCart = async (req, res) => {
 
 
 
+
 //end-point para eliminar
 const deleteCart = async (req, res) => {
     const { userId } = req.user.id;
-    
+
 
     try {
         // Buscar el carrito del usuario por su ID
@@ -100,7 +111,7 @@ const deleteCart = async (req, res) => {
 
 //end-point para listar
 const list = async (req, res) => {
-    const { userId } = req.params;
+    const userId = req.user.id
 
     try {
         // Buscar el carrito del usuario por su ID
@@ -130,8 +141,9 @@ const list = async (req, res) => {
 
 //end-point para actualizar
 const updateCart = async (req, res) => {
-    const { userId } = req.params;
+    const userId = req.user.id
     const { items } = req.body;
+    console.log(userId)
 
     try {
         // Buscar el carrito del usuario por su ID
@@ -147,6 +159,9 @@ const updateCart = async (req, res) => {
 
         // Actualizar los items del carrito
         cart.items = items;
+
+
+
 
         // Guardar los cambios en el carrito
         await cart.save();

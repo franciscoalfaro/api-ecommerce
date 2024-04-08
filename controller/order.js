@@ -16,9 +16,9 @@ const Cart = require("../models/cart")
 const createOrder = async (req, res) => {
     const { products, shippingAddress } = req.body;
     const userId = req.user.id
-    
+
     const email = req.user.email
- 
+
     try {
         // Verificar que el usuario existe
         const user = await User.findById(userId);
@@ -28,7 +28,7 @@ const createOrder = async (req, res) => {
                 message: "Usuario no encontrado"
             });
         }
-        
+
 
         let totalPrice = 0;  // Inicializamos totalPrice
 
@@ -41,11 +41,11 @@ const createOrder = async (req, res) => {
                     message: "Producto no encontrado"
                 });
             }
-            
+
             // Sumamos el precio unitario multiplicado por la cantidad de productos
             totalPrice += productData.quantity * productData.priceunitary;
 
-         
+
 
 
             // Actualizar el stock
@@ -148,7 +148,7 @@ const createOrderForGuest = async (req, res) => {
             // Crear la dirección asociada al usuario
             const newAddress = new Address({
                 userId: user._id,
-                nombre:nameDefault,
+                nombre: nameDefault,
                 direccion,
                 numero,
                 phone,
@@ -173,7 +173,11 @@ const createOrderForGuest = async (req, res) => {
                 });
             }
             totalPrice += productData.quantity * productData.priceunitary;
+
+            await updateStock(productData.product, productData.quantity);
         }
+
+    
 
         // Generar número de orden aleatorio
         let orderNumber = Math.floor(Math.random() * 1000000).toString();
@@ -227,11 +231,11 @@ async function enviarCorreoConfirmacion(email, orderNumber) {
         port: 587,
         secure: false,
         auth: {
-            user: emailUser, 
-            pass: emailPassword 
+            user: emailUser,
+            pass: emailPassword
         }
     });
-    
+
 
     const mailOptions = {
         from: emailUser,
@@ -252,10 +256,10 @@ async function enviarCorreoConfirmacion(email, orderNumber) {
 
 //funcion para actualizar stock al crear la orden
 const updateStock = async (productId, quantity) => {
-    
+
     try {
         const stock = await Stock.findOne({ productId });
-        
+
 
         if (!stock) {
             throw new Error(`No se encontró stock para el producto con ID ${productId}`);
@@ -337,8 +341,8 @@ const cancelOrder = async (req, res) => {
         // Restablecer el stock de los productos asociados a la orden cancelada
         for (const product of order.products) {
             const stock = await Stock.findOne({ productId: product.product });
-            
-        
+
+
             if (stock) {
                 stock.quantity += product.quantity; // Restablecer el stock
                 await stock.save();
@@ -416,9 +420,9 @@ const list = async (req, res) => {
 
 //end-point para actualizar el estado de la orden de pendiente a enviado
 const updateOrder = async (req, res) => {
-    const { products, shippingAddress, totalPrice, status, quantity,priceunitary } = req.body;
+    const { products, shippingAddress, totalPrice, status, quantity, priceunitary } = req.body;
     const id = req.params.id;
-  
+
 
     try {
         // Verificar si la orden existe
@@ -433,7 +437,7 @@ const updateOrder = async (req, res) => {
         // Crear la orden
         order.products = products.map((product, index) => ({
             product: product,
-            priceunitary: priceunitary[index], 
+            priceunitary: priceunitary[index],
             quantity: quantity[index]
         }));
         order.shippingAddress = shippingAddress;
@@ -477,9 +481,9 @@ const listOrderId = async (req, res) => {
         limit: itemPerPage,
         sort: { _id: -1 },
         select: ("-password -email -role -__v"),
-        
 
-        populate:([
+
+        populate: ([
             { path: 'shippingAddress', select: '-__v' },
             { path: 'products.product', select: 'quantity name' }
         ])
@@ -487,7 +491,7 @@ const listOrderId = async (req, res) => {
 
     try {
         // Filtrar el saldo por el número de orden
-        const order = await Order.paginate({  orderNumber: orderNumber}, opciones);
+        const order = await Order.paginate({ orderNumber: orderNumber }, opciones);
 
         if (!order || order.docs.length === 0) {
             return res.status(404).json({
