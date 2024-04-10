@@ -365,7 +365,7 @@ const cancelOrder = async (req, res) => {
 }
 
 
-//end-point para listar
+//end-point para listar mis ordenes como un usuario autenticado
 const list = async (req, res) => {
     const userId = req.user.id; // Obtener el ID del usuario autenticado desde el token
 
@@ -386,19 +386,19 @@ const list = async (req, res) => {
     };
 
     try {
-        // Filtrar el saldo por el ID del usuario
+        // Filtrar la orden por el ID del usuario
         const order = await Order.paginate({ userId: userId }, opciones);
 
         if (!order || order.docs.length === 0) {
             return res.status(404).json({
                 status: "error",
-                message: "No se encontró direcciones para este usuario"
+                message: "No se encontró ordenes para este usuario"
             });
         }
 
         return res.status(200).send({
             status: "success",
-            message: "Listado de direcciones del usuario",
+            message: "Listado de ordenes del usuario",
             order: order.docs,
             totalDocs: order.totalDocs,
             totalPages: order.totalPages,
@@ -411,14 +411,141 @@ const list = async (req, res) => {
     } catch (error) {
         return res.status(500).json({
             status: 'error',
-            message: 'Error al listar direcciones',
+            message: 'Error al listar las ordenes',
             error: error.message
         });
     }
 };
 
+const listAllOrder = async (req, res) => {
+    const userId = req.user.id; // Obtener el ID del usuario autenticado desde el token
 
-//end-point para actualizar el estado de la orden de pendiente a enviado
+    let page = 1;
+
+    if (req.params.page) {
+        page = parseInt(req.params.page);
+    }
+
+    const itemPerPage = 4;
+
+    const opciones = {
+        page: page,
+        limit: itemPerPage,
+        sort: { createdAt: -1},
+        select: ("-password -email -role -__v")
+
+    };
+
+    try {
+        // Filtrar la orden por el ID del usuario
+        const order = await Order.paginate({}, opciones);
+
+        if (!order || order.docs.length === 0) {
+            return res.status(404).json({
+                status: "error",
+                message: "No se encontró ordenes para este usuario"
+            });
+        }
+
+        return res.status(200).send({
+            status: "success",
+            message: "Listado de ordenes",
+            order: order.docs,
+            totalDocs: order.totalDocs,
+            totalPages: order.totalPages,
+            limit: order.limit,
+            page: order.page,
+
+
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            status: 'error',
+            message: 'Error al listar las ordenes',
+            error: error.message
+        });
+    }
+};
+
+//end-point para listar las ordenes para el droplist
+const listDropAllorder = async (req,res)=>{
+    const userId = req.user.id; 
+
+    const opciones = {
+        sort: { createdAt: -1},
+        select: ("-password -email -role -__v")
+
+    };
+
+    try {
+        
+        // obtener ordenes
+        const order = await Order.find({},null,opciones);
+
+        if (!order) {
+            return res.status(404).json({
+                status: "error",
+                message: "No se encontró ordenes"
+            });
+        }
+
+        return res.status(200).send({
+            status: "success",
+            message: "Listado de ordenes",
+            order: order
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            status: 'error',
+            message: 'Error al listar las ordenes',
+            error: error.message
+        });
+    }
+
+}
+
+
+//end-point para modificar el estado de la orden de pendiente a enviado
+const updateStatusOrder = async (req, res) => {
+    const { status } = req.body;
+    const id = req.params.id;
+    console.log(status)
+
+
+    try {
+        // Verificar si la orden existe
+        const order = await Order.findById(id);
+        if (!order) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'Orden no encontrada'
+            });
+        }
+
+        order.status = status;
+
+        // Guardar la orden
+        await order.save();
+
+        return res.status(200).json({
+            status: "success",
+            message: "Orden actualizada correctamente",
+            order: order
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            status: 'error',
+            message: 'Error al actualizar la orden',
+            error: error.message
+        });
+    }
+}
+
+
+//end-point para modificar el pedido
 const updateOrder = async (req, res) => {
     const { products, shippingAddress, totalPrice, status, quantity, priceunitary } = req.body;
     const id = req.params.id;
@@ -526,7 +653,10 @@ module.exports = {
     deleteOrder,
     list,
     updateOrder,
+    updateStatusOrder,
     listOrderId,
     cancelOrder,
-    createOrderForGuest
+    createOrderForGuest,
+    listAllOrder,
+    listDropAllorder
 }
