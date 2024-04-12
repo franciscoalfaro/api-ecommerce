@@ -65,7 +65,6 @@ const createStock = async (req, res) => {
     }
 }
 
-
 //end-point para eliminar stock
 const deleteStock = async (req, res) => {
     const stockId = req.params.id;
@@ -126,19 +125,19 @@ const list = async (req, res) => {
     };
 
     try {
-        // Filtrar el saldo por el ID del usuario
-        const stock = await Stock.paginate({ userId: userId }, opciones);
+        // Filtrar el stock por el ID del producto
+        const stock = await Stock.paginate({}, opciones);
 
         if (!stock || stock.docs.length === 0) {
             return res.status(404).json({
-                status: 'Error',
-                message: 'No se encontró redes para este usuario',
+                status: 'error',
+                message: 'No se encontró stock para el producto',
             });
         }
 
         return res.status(200).send({
             status: 'success',
-            message: 'Listado de redes del usuario',
+            message: 'Stock producto',
             stock: stock.docs,
             totalDocs: stock.totalDocs,
             totalPages: stock.totalPages,
@@ -148,7 +147,7 @@ const list = async (req, res) => {
     } catch (error) {
         return res.status(500).json({
             status: 'error',
-            message: 'Error al listar las redes',
+            message: 'Error al listar el stock',
             error: error.message,
         });
     }
@@ -201,6 +200,9 @@ const updateStock = async (req, res) => {
         });
     }
 }
+
+//filtrar stock de un producto
+
 
 
 

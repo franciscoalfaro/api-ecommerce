@@ -10,7 +10,8 @@ const User = require("../models/user")
 const Address = require("../models/address")
 const Order = require("../models/order")
 const Cart = require("../models/cart")
-
+const Bestselling = require("../models/bestselling")
+const Sale = require("../models/sale")
 
 //end-point para crear orden usuario registrado
 const createOrder = async (req, res) => {
@@ -177,7 +178,7 @@ const createOrderForGuest = async (req, res) => {
             await updateStock(productData.product, productData.quantity);
         }
 
-    
+
 
         // Generar número de orden aleatorio
         let orderNumber = Math.floor(Math.random() * 1000000).toString();
@@ -431,7 +432,7 @@ const listAllOrder = async (req, res) => {
     const opciones = {
         page: page,
         limit: itemPerPage,
-        sort: { createdAt: -1},
+        sort: { createdAt: -1 },
         select: ("-password -email -role -__v")
 
     };
@@ -469,19 +470,19 @@ const listAllOrder = async (req, res) => {
 };
 
 //end-point para listar las ordenes para el droplist
-const listDropAllorder = async (req,res)=>{
-    const userId = req.user.id; 
+const listDropAllorder = async (req, res) => {
+    const userId = req.user.id;
 
     const opciones = {
-        sort: { createdAt: -1},
+        sort: { createdAt: -1 },
         select: ("-password -email -role -__v")
 
     };
 
     try {
-        
+
         // obtener ordenes
-        const order = await Order.find({},null,opciones);
+        const order = await Order.find({}, null, opciones);
 
         if (!order) {
             return res.status(404).json({
@@ -511,12 +512,11 @@ const listDropAllorder = async (req,res)=>{
 const updateStatusOrder = async (req, res) => {
     const { status } = req.body;
     const id = req.params.id;
-    console.log(status)
-
 
     try {
         // Verificar si la orden existe
         const order = await Order.findById(id);
+
         if (!order) {
             return res.status(404).json({
                 status: 'error',
@@ -524,15 +524,124 @@ const updateStatusOrder = async (req, res) => {
             });
         }
 
-        order.status = status;
+        // Verificar si el estado ha cambiado
+        if (order.status !== status) {
+            // Si el nuevo estado es "enviado", actualizar el estado de la orden y guardarla
+            if (status === 'shipped') {
+                order.status = status;
+                await order.save();
+                return res.status(200).json({
+                    status: 'success',
+                    message: 'Orden enviada correctamente',
+                    order: order
+                });
+            }
 
-        // Guardar la orden
-        await order.save();
+            // Si el nuevo estado es "delivered", actualizar el estado de la orden y actualizar Bestselling
+            if (status === 'delivered') {
+                order.status = status;
+                await order.save();
 
-        return res.status(200).json({
-            status: "success",
-            message: "Orden actualizada correctamente",
-            order: order
+                const now = new Date();
+                const month = now.getMonth() + 1; // Se suma 1 porque los meses van de 0 a 11
+                const year = now.getFullYear();
+
+                let totalSaleAmount = 0;
+
+                // Recorrer los productos de la orden y actualizar Bestselling
+                for (const orderProduct of order.products) {
+                    const product = await Product.findById(orderProduct.product);
+                    if (product) {
+                        // Buscar el producto en Sale
+                        let sale = await Sale.findOne({ 'products.product': product.name, month, year });
+                        if (!sale) {
+                            // Si no existe un registro para este producto este mes y año, crear uno nuevo
+                            sale = new Sale({
+                                products: [
+                                    {
+                                        product: product.name,
+                                        priceunitary: product.price,
+                                        quantity: orderProduct.quantity
+                                    }
+                                ],
+                                ventaMensual: 0, // Inicializamos en 0
+                                month,
+                                year,
+                                lastUpdatedAt: now
+                            });
+                        } else {
+                            // Si el registro ya existe, actualizar la cantidad y el monto total de la venta
+                            sale.products.forEach(p => {
+                                if (p.product === product.name) {
+                                    p.quantity += orderProduct.quantity;
+                                }
+                            });
+                            sale.lastUpdatedAt = now;
+                        }
+
+                        // Calcular el monto total de la venta
+                        sale.ventaMensual = sale.products.reduce((total, p) => total + (p.priceunitary * p.quantity), 0);
+
+                        // Guardar el registro de venta
+                        await sale.save();
+
+                        // Actualizar el total de ventas mensuales
+                        totalSaleAmount += sale.ventaMensual;
+
+                        // Actualizar o crear el registro en Bestselling
+                        let bestselling = await Bestselling.findOne({ nombreproducto: product.name });
+                        if (!bestselling) {
+                            bestselling = new Bestselling({
+                                nombreproducto: product.name,
+                                quantity: orderProduct.quantity
+                            });
+                        } else {
+                            bestselling.quantity += orderProduct.quantity;
+                        }
+                        await bestselling.save();
+                    }
+                }
+
+                return res.status(200).json({
+                    status: 'success',
+                    message: 'Orden entregada correctamente, Bestselling actualizado y detalles de venta guardados en Sale',
+                    order: order
+                });
+            }
+
+
+
+
+            if (status === 'canceled') {
+                order.status = "canceled";
+                await order.save();
+
+                // Restablecer el stock de los productos asociados a la orden cancelada
+                for (const product of order.products) {
+                    const stock = await Stock.findOne({ productId: product.product });
+
+
+                    if (stock) {
+                        stock.quantity += product.quantity; // Restablecer el stock
+                        await stock.save();
+                    }
+                }
+
+                return res.status(200).json({
+                    status: 'success',
+                    message: 'Order cancelada correctamente',
+                    order: order
+                });
+
+            }
+
+
+        }
+
+        // Si el estado no cambió o no es válido
+        return res.status(400).json({
+            status: 'error',
+            message: 'El estado proporcionado no es válido o la orden ya está en ese estado'
         });
 
     } catch (error) {
@@ -542,10 +651,10 @@ const updateStatusOrder = async (req, res) => {
             error: error.message
         });
     }
-}
+};
 
 
-//end-point para modificar el pedido
+//end-point para modificar el pedido(elementos que no puedan existir por ejemplo problemas de stock)
 const updateOrder = async (req, res) => {
     const { products, shippingAddress, totalPrice, status, quantity, priceunitary } = req.body;
     const id = req.params.id;

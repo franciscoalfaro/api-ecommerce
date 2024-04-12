@@ -47,6 +47,9 @@ router.get("/featuredproduct/:page?", ProductController.featuredProducts)
 
 //productos mas vendidos
 router.get("/bestselling/:page?", ProductController.BestSellingProducts)
+router.get("/bestlist/:page?", check.auth, ProductController.listBestSelling)
+
+router.get("/sales/:page?", check.auth, ProductController.ventas)
 
 
 //consultar y traer el producto por el id

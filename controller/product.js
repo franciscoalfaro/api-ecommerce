@@ -7,6 +7,8 @@ const Stock = require("../models/stock")
 const mongoosePagination = require('mongoose-paginate-v2')
 const User = require("../models/user")
 const Order = require("../models/order")
+const Bestselling = require("../models/bestselling")
+const Sale = require("../models/sale")
 
 
 
@@ -556,6 +558,11 @@ const getProductCategory = async (req, res) => {
 
 //mas vendidos
 const BestSellingProducts = async (req, res) => {
+    let page = 1
+    if (req.params.page) {
+        page = req.params.page
+    }
+    page = parseInt(page)
     try {
         let page = 1;
         let limit = 10;
@@ -729,6 +736,95 @@ const featuredProducts = async (req, res) => {
     }
 };
 
+//listar los productos nombre y cantidad
+const listBestSelling = async (req, res) => {
+    let page = 1
+
+    if (req.params.page) {
+        page = req.params.page
+    }
+    page = parseInt(page)
+
+    try {
+        let itemPerPage = 2
+
+        const opciones = {
+            page: page,
+            limit: itemPerPage,
+            sort: { lastUpdatedAt: -1 }
+        }
+
+
+        const bestselling = await Bestselling.paginate({}, opciones);
+
+        if (!bestselling || bestselling.docs.length === 0) {
+            return res.status(404).json({
+                status: 'Error',
+                message: 'No se encontró bestselling ',
+            });
+        }
+
+        return res.status(200).json({
+            status: "success",
+            message: "Lista de bestselling",
+            bestselling: bestselling.docs,
+            page: bestselling.page,
+            totalDocs: bestselling.totalDocs,
+            totalPages: bestselling.totalPages,
+            limit: bestselling.limit,
+        });
+
+
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            message: "Error al obtener los productos más vendidos",
+            error: error.message
+        });
+
+    }
+}
+
+//end-point para listar el total de ventas por mes
+const ventas = async (req, res) => {
+    try {
+        // Obtener el usuario de la solicitud
+        const userId = req.user;
+
+        // Realizar la agregación en la colección Sale para obtener los datos deseados
+        const ventasPorMes = await Sale.aggregate([
+            {
+                $group: {
+                    _id: { month: "$month", year: "$year" },
+                    totalVentas: { $sum: "$ventaMensual" },
+                    productos: { 
+                        $addToSet: { 
+                            nombreProducto: "$products.product",
+                            cantidad: { $sum: "$products.quantity" }
+                        }
+                    }
+                }
+            },
+            {
+                $sort: { "_id.year": -1, "_id.month": -1 } // Ordenar por año y mes descendente
+            }
+        ]);
+
+        return res.status(200).json({
+            status: "success",
+            message: "Total de ventas por mes",
+            ventasPorMes: ventasPorMes
+        });
+        
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            message: "Error al obtener las ventas",
+            error: error.message
+        });
+    }
+};
+
 
 
 
@@ -751,5 +847,7 @@ module.exports = {
     getProductCategory,
     BestSellingProducts,
     offerPrice,
-    featuredProducts
+    featuredProducts,
+    listBestSelling,
+    ventas
 }
