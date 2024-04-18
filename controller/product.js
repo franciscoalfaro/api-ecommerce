@@ -14,21 +14,22 @@ const Sale = require("../models/sale")
 
 //end-point para crear Products
 const createProduct = async (req, res) => {
-    const params = req.body;
-    console.log(params)
-
-    if (!params.name || !params.description || !params.brand || !params.size || !params.price || !params.category) {
-        return res.status(400).json({
-            status: "Error",
-            message: "Faltan datos por enviar",
-        });
-    }
 
     try {
         const userId = req.user.id;
-        console.log(userId)
+        const params = req.body;
+
+        const requiredFields = ['name', 'description', 'brand', 'size', 'price', 'category'];
+        const missingFields = requiredFields.filter(field => !params[field]);
+
+        if (missingFields.length > 0) {
+            return res.status(400).json({
+                status: "error",
+                message: `Faltan campos obligatorios: ${missingFields.join(', ')}`
+            });
+        }
         //se comprueba desde helpers-validate
-        validarProduct.validar(params);
+        validarProduct.validar(params);        
 
         let existsCategory = await Category.findOne({ userId, name: params.category });
 
@@ -62,8 +63,6 @@ const createProduct = async (req, res) => {
             newProduct,
         });
     } catch (error) {
-        console.error(error);
-
         return res.status(500).json({
             status: "error",
             message: "Error al crear el producto",

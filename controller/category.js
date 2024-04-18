@@ -17,23 +17,29 @@ const createCategory = async (req, res) => {
     }
 
     try {
-        // Obtener el userId del usuario autenticado desde el token
-        const userId = req.user.id;
-
-        // Comprobar si la categoría ya existe por su nombre para el usuario actual
-        const categoryExists = await Category.findOne({ name: params.name, userId: userId });
-
-        if (categoryExists) {
-            return res.status(409).json({
+        // Verificar si el usuario tiene el rol de administrador
+        const userRole = req.user.role;
+        const allowedRoles = ['root', 'administrador', 'admin'];
+        if (!allowedRoles.includes(userRole)) {
+            return res.status(403).json({
                 status: "error",
-                message: "La categoría ya existe para este usuario"
+                message: "No tiene permisos para crear categorías"
             });
         }
 
-        // Si la categoría no existe para el usuario actual, crearla asociada a ese usuario
+        // Verificar si la categoría ya existe
+        const categoryExists = await Category.findOne({ name: params.name });
+        if (categoryExists) {
+            return res.status(409).json({
+                status: "error",
+                message: "La categoría ya existe"
+            });
+        }
+
+        // Crear la nueva categoría
         const newCategory = await Category.create({
             name: params.name,
-            userId: userId // Asociar la categoría al usuario actual
+            userId: req.user.id // Asociar la categoría al usuario actual
         });
 
         return res.status(201).json({
@@ -50,6 +56,7 @@ const createCategory = async (req, res) => {
         });
     }
 }
+
 
 //delete category
 const deleteCategory = async (req, res) => {
@@ -159,7 +166,7 @@ const listCategorys = async (req, res) => {
             
         };
         // Buscar todas las categorías asociadas al usuario
-        const categorys = await Category.paginate({ userId},options );
+        const categorys = await Category.paginate({},options );
 
         return res.status(200).json({
             status: 'success',
