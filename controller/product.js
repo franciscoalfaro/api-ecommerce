@@ -18,7 +18,7 @@ const createProduct = async (req, res) => {
     try {
         const userId = req.user.id;
         const params = req.body;
-        console.log(req.body)
+    
 
         const requiredFields = ['name', 'description', 'brand', 'size', 'price', 'category','gender'];
         const missingFields = requiredFields.filter(field => !params[field]);
@@ -82,7 +82,7 @@ const upload = async (req, res) => {
 
     // Recoger los archivos de imagen
     const files = req.files;
-    console.log(files)
+  
 
     // Verificar si se proporcionaron archivos de imagen
     if (!files || files.length === 0) {
@@ -238,7 +238,7 @@ const media = (req, res) => {
 const search = async (req, res) => {
     try {
         let busqueda = req.params.product;
-        console.log(busqueda)
+       
 
         busqueda = busqueda.replace(/\+/g, ' ');
 
@@ -374,7 +374,7 @@ const deleteProduct = async (req, res) => {
     try {
         const productId = req.params.id;
         const userId = req.user.id;
-        console.log(userId)
+       
 
         // Buscar el producto y verificar si el usuario logueado es el creador
         const productDelete = await Product.findOne({ _id: productId, userId: userId });
@@ -417,7 +417,7 @@ const updateProduct = async (req, res) => {
         const userId = req.user.id;
         const idProduct = req.params.id;  // Asumiendo que el id se encuentra en los parámetros
         const productUpdate = req.body;
-        console.log(req.body)
+       
 
         // Verificar si el producto existe
         const productExist = await Product.findById(idProduct);

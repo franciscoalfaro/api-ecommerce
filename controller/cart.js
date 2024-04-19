@@ -143,7 +143,7 @@ const list = async (req, res) => {
 const updateCart = async (req, res) => {
     const userId = req.user.id
     const { items } = req.body;
-    console.log(userId)
+   
 
     try {
         // Buscar el carrito del usuario por su ID

@@ -9,8 +9,10 @@ const Product = require("../models/product")
 //end-point para crear stock
 const createStock = async (req, res) => {
     const params = req.body;
+    const productId = req.params.id
 
-    if (!params.productId || !params.quantity || !params.location) {
+
+    if (!productId || !params.quantity || !params.location) {
         return res.status(400).json({
             status: "Error",
             message: "Faltan datos por enviar",
@@ -18,7 +20,7 @@ const createStock = async (req, res) => {
     }
 
     try {
-        const { productId, quantity, location } = params;
+        const { quantity, location } = params;
         const userId = req.user.id;
 
         let stockExistente = await Stock.findOne({ productId, location });

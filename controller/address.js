@@ -11,7 +11,7 @@ const createAddress = async (req, res) => {
     try {
         const params = req.body;
         const userId = req.user.id;
-        console.log('data',params)
+   
 
         if (!params.direccion || !params.numero || !params.nombre || !params.phone || !params.region || !params.ciudad || !params.comuna) {
             return res.status(400).json({
@@ -62,7 +62,7 @@ const deleteAddress = async (req, res) => {
     try {
         const addressId = req.params.id;
         const userId = req.user.id;
-        console.log(userId)
+       
 
         // Buscar la red y verificar si el usuario logueado es el creador
         const addresDelete = await Address.findOne({ _id: addressId, userId: userId });
@@ -103,7 +103,7 @@ const deleteAddress = async (req, res) => {
 const updateAddress = async (req, res) => {
     const { id } = req.params; // ID de la dirección a actualizar
     const UserId = req.user.id; // ID del usuario autenticado
-    console.log(req.body)
+  
     
     const { direccion, nombre,phone, numero, region, codigoPostal, ciudad, comuna } = req.body; // Nuevos datos de la dirección 
 

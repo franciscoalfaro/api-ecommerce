@@ -22,6 +22,7 @@ const uploads = multer({storage})
 //definir rutas
 
 router.post("/register", UserController.register)
+router.post("/createuser",check.auth, UserController.createUser)
 router.post("/login",UserController.login)
 router.get("/profile/:id",check.auth, UserController.profile)
 router.get("/list/:page?",check.auth, UserController.list)

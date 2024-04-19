@@ -13,6 +13,10 @@ const Cart = require("../models/cart")
 const Bestselling = require("../models/bestselling")
 const Sale = require("../models/sale")
 
+const enviar = require("../middlewares/recuperarpass")
+const nikc = require("../services/randomnick")
+
+
 //end-point para crear orden usuario registrado
 const createOrder = async (req, res) => {
     const { products, shippingAddress } = req.body;
@@ -86,7 +90,7 @@ const createOrder = async (req, res) => {
         // Guardar la orden
         await order.save();
 
-        await enviarCorreoConfirmacion(email, orderNumber)
+        await enviar.enviarCorreoConfirmacion(email, orderNumber)
 
         return res.status(200).json({
             status: "success",
@@ -103,6 +107,7 @@ const createOrder = async (req, res) => {
     }
 }
 
+
 //end-point para crear orden usuario no registrado, se debe de crear usuario antes de guardar la direccion y antes de generar la orden con los datos requeridos
 const createOrderForGuest = async (req, res) => {
     const { name, surname, email, products } = req.body;
@@ -118,11 +123,13 @@ const createOrderForGuest = async (req, res) => {
             const randomPassword = Math.random().toString(36).slice(-8);
             const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
+            const nickRamdom = nikc.generateRandomNick(8)
+
             // Crear el nuevo usuario
             user = new User({
                 name,
                 surname,
-                nick: email, // Opcional: podrías usar el email como nombre de usuario
+                nick: nickRamdom, // Opcional: podrías usar el email como nombre de usuario
                 email,
                 password: hashedPassword // Asigna la contraseña aleatoria
             });
@@ -203,7 +210,7 @@ const createOrderForGuest = async (req, res) => {
         const savedOrder = await newOrder.save();
 
         // Enviar correo de confirmación
-        await enviarCorreoConfirmacion(email, orderNumber);
+        await enviar.enviarCorreoConfirmacion(email, orderNumber);
 
         // Retornar la respuesta con la orden creada
         return res.status(200).json({
@@ -222,37 +229,7 @@ const createOrderForGuest = async (req, res) => {
 
 
 
-// Función para enviar correo de confirmacion de compra con numero de orden
-async function enviarCorreoConfirmacion(email, orderNumber) {
-    const emailUser = process.env.EMAIL_USER;
-    const emailPassword = process.env.EMAIL_PASSWORD;
 
-    const transporter = nodemailer.createTransport({
-        host: 'smtp.ionos.com',
-        port: 587,
-        secure: false,
-        auth: {
-            user: emailUser,
-            pass: emailPassword
-        }
-    });
-
-
-    const mailOptions = {
-        from: emailUser,
-        to: email,
-        subject: '¡Tu orden ha sido generada correctamente!',
-        html: `
-            <h1>¡Tu orden ha sido generada correctamente!</h1>
-            <p>Tu número de orden es: <strong>${orderNumber}</strong>.</p>
-            <p>Puedes hacer seguimiento de tu pedido en <a href="http://localhost:5173/seguimiento">http://localhost:5173/seguimiento</a>.</p>
-            <div>
-                <img src="https://blogapi.comogasto.com/api/articulo/media/articulo-1711754612310-tiendagaston.jpeg" alt="Banner de promoción" style="max-width: 100%; height: auto;">
-            </div>
-        `
-    };
-    await transporter.sendMail(mailOptions);
-}
 
 
 //funcion para actualizar stock al crear la orden
@@ -279,7 +256,7 @@ const updateStock = async (productId, quantity) => {
 }
 
 
-//end-point para eliminar orden
+//end-point para eliminar orden solo el usuario admin puede eliminar 
 const deleteOrder = async (req, res) => {
     try {
         const orderId = req.params.id;
@@ -295,11 +272,12 @@ const deleteOrder = async (req, res) => {
             });
         }
 
-        // Verificar si el usuario logueado tiene permiso para eliminar la orden
-        if (orderToDelete.userId.toString() !== userId.toString()) {
+        const userRole = req.user.role;
+        const allowedRoles = ['root', 'administrador', 'admin'];
+        if (!allowedRoles.includes(userRole)) {
             return res.status(403).json({
-                status: 'error',
-                message: 'No tiene permiso para eliminar esta order'
+                status: "error",
+                message: "No tiene permisos para crear categorías"
             });
         }
 

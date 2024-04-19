@@ -4,6 +4,10 @@ const bcrypt = require("bcrypt")
 const mongoosePagination = require('mongoose-paginate-v2')
 const path = require("path")
 
+const enviar = require("../middlewares/recuperarpass")
+const nuevaclave = require("../services/generatepassword")
+const nikc = require("../services/randomnick")
+
 // importar modelo
 const User = require("../models/user")
 
@@ -74,6 +78,74 @@ const register = async (req, res) => {
     }
 };
 
+const createUser = async (req, res) => {
+    try {
+        const { email, name, surname, role } = req.body;
+
+        // Verificar si el usuario tiene el rol de administrador
+        const userRole = req.user.role;
+        const allowedRoles = ['root', 'administrador', 'admin'];
+        if (!allowedRoles.includes(userRole)) {
+            return res.status(403).json({
+                status: "error",
+                message: "No tiene permisos para crear usuarios"
+            });
+        }
+
+        // Validar datos de entrada
+        if (!email || !name || !surname || !role) {
+            return res.status(400).json({
+                status: "error",
+                message: "Faltan datos por enviar"
+            });
+        }
+
+        // Verificar si el usuario ya existe
+        let user = await User.findOne({ email });
+        if (user) {
+            return res.status(409).json({
+                status: "error",
+                message: "El usuario ya existe"
+            });
+        }
+
+        // Crear una contraseña aleatoria para el nuevo usuario
+        const nuevaContrasena = nuevaclave.generarNuevaContrasena();
+        const hashedPassword = await bcrypt.hash(nuevaContrasena, 10);
+
+        // Crear el nuevo usuario
+        const nickRandom = nikc.generateRandomNick(8); // Suponiendo que esta función genera un nick aleatorio
+        user = new User({
+            name,
+            surname,
+            role,
+            nick: nickRandom,
+            email,
+            password: hashedPassword
+        });
+
+        // Guardar el nuevo usuario en la base de datos
+        await user.save();
+
+        // Enviar correo de bienvenida con la nueva contraseña
+        await enviar.enviarCorreoBienvenida(email, nuevaContrasena);
+
+        // Devolver el resultado
+        return res.status(201).json({
+            status: "success",
+            message: "Usuario creado correctamente",
+            user
+        });
+    } catch (error) {
+        console.error("Error al crear el usuario:", error);
+        return res.status(500).json({
+            status: "error",
+            message: "Error al crear el usuario",
+            error: error.message
+        });
+    }
+}
+
 
 //Login de usuario
 const login = async (req, res) => {
@@ -90,9 +162,10 @@ const login = async (req, res) => {
         const user = await User.findOne({ email: params.email });
 
         if (!user) {
-            return res.status(404).json({ 
-                status: "Not Found", 
-                message: "Usuario no registrado" });
+            return res.status(404).json({
+                status: "Not Found",
+                message: "Usuario no registrado"
+            });
         }
 
         const pwd = bcrypt.compareSync(params.password, user.password);
@@ -116,7 +189,7 @@ const login = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 nick: user.nick,
-                role:user.role
+                role: user.role
             },
             token,
         });
@@ -131,12 +204,12 @@ const login = async (req, res) => {
 const profile = async (req, res) => {
     try {
         const id = req.params.id;
-        const userProfile = await User.findById(id).select({ "password": 0});
+        const userProfile = await User.findById(id).select({ "password": 0 });
 
         if (!userProfile) {
-            return res.status(404).json({ 
-                status: "error", 
-                message: "NO SE HA ENCONTRADO EL USUARIO" 
+            return res.status(404).json({
+                status: "error",
+                message: "NO SE HA ENCONTRADO EL USUARIO"
             });
         }
 
@@ -153,7 +226,7 @@ const profile = async (req, res) => {
 
 
 //listar usuarios
-const list = (req, res)=>{
+const list = (req, res) => {
     let page = 1
 
     if (req.params.page) {
@@ -183,15 +256,15 @@ const list = (req, res)=>{
                 totalDocs: users.totalDocs,
                 itempage: users.limit,
                 page: users.page,
-                    
+
             })
-    
+
         })
-        
+
     } catch (error) {
         if (error) return res.status(500).send({ status: "error", message: "error al obtener el usuario en servidor" })
         console.log(error);
-        
+
     }
 }
 
@@ -385,5 +458,6 @@ module.exports = {
     update,
     avatar,
     upload,
-    remove
+    remove,
+    createUser
 }
