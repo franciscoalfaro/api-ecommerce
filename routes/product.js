@@ -25,7 +25,7 @@ router.delete("/delete/:id",check.auth, ProductController.deleteProduct)
 router.put("/update/:id",check.auth, ProductController.updateProduct)
 
 //imagenes
-router.post("/upload/:id",[check.auth, uploads.array("files")], ProductController.upload)
+router.post("/uploads/:id",[check.auth, uploads.array("files")], ProductController.upload)
 router.delete("/deleteImages/:id",check.auth, ProductController.deleteImages)
 //traermedia
 router.get("/media/:file", ProductController.media)

@@ -18,8 +18,9 @@ const createProduct = async (req, res) => {
     try {
         const userId = req.user.id;
         const params = req.body;
+        console.log(req.body)
 
-        const requiredFields = ['name', 'description', 'brand', 'size', 'price', 'category'];
+        const requiredFields = ['name', 'description', 'brand', 'size', 'price', 'category','gender'];
         const missingFields = requiredFields.filter(field => !params[field]);
 
         if (missingFields.length > 0) {
@@ -48,6 +49,7 @@ const createProduct = async (req, res) => {
             description: params.description,
             brand: params.brand,
             size: params.size,
+            gender:params.gender,
             price: params.price,
             Autor: usuarioPublicacion.name,
             category: existsCategory._id,
@@ -80,6 +82,7 @@ const upload = async (req, res) => {
 
     // Recoger los archivos de imagen
     const files = req.files;
+    console.log(files)
 
     // Verificar si se proporcionaron archivos de imagen
     if (!files || files.length === 0) {
@@ -414,6 +417,7 @@ const updateProduct = async (req, res) => {
         const userId = req.user.id;
         const idProduct = req.params.id;  // Asumiendo que el id se encuentra en los parámetros
         const productUpdate = req.body;
+        console.log(req.body)
 
         // Verificar si el producto existe
         const productExist = await Product.findById(idProduct);

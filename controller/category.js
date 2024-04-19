@@ -151,32 +151,23 @@ const updateCategory = async (req, res) => {
 //list categorias de productos esto para el usuario que administra
 const listCategorys = async (req, res) => {
     const userId = req.user.id; // Suponiendo que tienes el ID del usuario en el token
-    let page = 1;
-
-    if (req.params.page) {
-        page = parseInt(req.params.page);
-    }
-
-    const itemPerPage = 4;
 
     try {
-        const options = {
-            page: page,
-            limit: itemPerPage,
-            
-        };
+        if(!userId ){
+            return res.status(401).json({
+                status: 'warning',
+                message: 'No tiene permiso mostrar los datos',    
+            });
+        }
+
         // Buscar todas las categorías asociadas al usuario
-        const categorys = await Category.paginate({},options );
+        const categorys = await Category.paginate();
 
         return res.status(200).json({
             status: 'success',
             message: 'Categorías encontradas',
             categorias:categorys.docs,
-            totalPages: categorys.totalPages,
-            totalCategories: categorys.totalCategoria,
-            itempage: categorys.limit,
-            page: categorys.page,
-            totalDocs:categorys.totalDocs
+
         });
     } catch (error) {
         return res.status(500).json({
@@ -187,7 +178,7 @@ const listCategorys = async (req, res) => {
     }
 };
 
-//
+//listar categorias de productos
 const listCategorysDrop = async (req, res) => {
 
     try {
