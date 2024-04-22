@@ -11,7 +11,6 @@ const createStock = async (req, res) => {
     const params = req.body;
     const productId = req.params.id
 
-
     if (!productId || !params.quantity || !params.location) {
         return res.status(400).json({
             status: "Error",
@@ -23,7 +22,8 @@ const createStock = async (req, res) => {
         const { quantity, location } = params;
         const userId = req.user.id;
 
-        let stockExistente = await Stock.findOne({ productId, location });
+        let stockExistente = await Stock.findOne({ productId });
+        console.log('stock',stockExistente)
 
         if (stockExistente) {
             stockExistente.quantity = quantity;

@@ -1,3 +1,4 @@
+const { min } = require("moment");
 const { Schema, model } = require("mongoose");
 const mongoosePaginate = require('mongoose-paginate-v2');
 
@@ -32,6 +33,7 @@ const ProductSchema = Schema({
     },
     offerprice: { 
         type: String,
+        default:''
     },
     standout: { 
         type: Boolean,

@@ -680,7 +680,7 @@ const offerPrice = async (req, res) => {
 
 
 
-//productos destacados
+//listar productos destacados
 const featuredProducts = async (req, res) => {
     try {
         let page = 1;
