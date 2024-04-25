@@ -829,6 +829,50 @@ const ventas = async (req, res) => {
 };
 
 
+//crear especificacion
+const specifications  = async (req, res) => {
+    try {
+        const { key, value, productId } = req.body;
+        console.log(req.body)
+
+        // Verificar si el producto existe
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({
+                status: "error",
+                message: "El producto no existe"
+            });
+        }
+
+        // Verificar si la especificación ya existe para este producto
+        const existingSpecification = product.specifications.find(spec => spec.key === key);
+        if (existingSpecification) {
+            return res.status(409).json({
+                status: "error",
+                message: `La especificación '${key}' ya existe para este producto`
+            });
+        }
+
+        // Agregar la nueva especificación al producto
+        product.specifications.push({ key, value });
+        await product.save();
+
+        return res.status(201).json({
+            status: "success",
+            message: "Especificación creada correctamente",
+            specification:product.specifications
+        });
+    } catch (error) {
+        console.error("Error al crear la especificación:", error);
+        return res.status(500).json({
+            status: "error",
+            message: "Error al crear la especificación",
+            error: error.message
+        });
+    }
+}
+
+
 
 
 
@@ -852,5 +896,6 @@ module.exports = {
     offerPrice,
     featuredProducts,
     listBestSelling,
-    ventas
+    ventas,
+    specifications
 }

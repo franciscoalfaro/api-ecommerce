@@ -66,6 +66,7 @@ const register = async (req, res) => {
         // Guardar usuario en la BD
         const userStored = await user_to_save.save();
 
+        
         // Devolver el resultado
         return res.status(201).json({
             status: "success",
@@ -81,6 +82,7 @@ const register = async (req, res) => {
 const createUser = async (req, res) => {
     try {
         const { email, name, surname, role } = req.body;
+        console.log(req.body)
 
         // Verificar si el usuario tiene el rol de administrador
         const userRole = req.user.role;
@@ -104,7 +106,7 @@ const createUser = async (req, res) => {
         let user = await User.findOne({ email });
         if (user) {
             return res.status(409).json({
-                status: "error",
+                status: "warning",
                 message: "El usuario ya existe"
             });
         }
@@ -125,16 +127,26 @@ const createUser = async (req, res) => {
         });
 
         // Guardar el nuevo usuario en la base de datos
-        await user.save();
+        const userCreado = await user.save();
 
         // Enviar correo de bienvenida con la nueva contraseña
         await enviar.enviarCorreoBienvenida(email, nuevaContrasena);
 
+        
+        delete user.password;
+        console.log("Usuario creado sin contraseña:", userCreado);
+
+        if (userCreado) {
+            userCreado.password = delete userCreado.password; // O puedes usar delete userCreado.password;
+        }
+
+        
+        
         // Devolver el resultado
         return res.status(201).json({
             status: "success",
             message: "Usuario creado correctamente",
-            user
+            userCreado
         });
     } catch (error) {
         console.error("Error al crear el usuario:", error);
