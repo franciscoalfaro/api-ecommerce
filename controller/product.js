@@ -872,11 +872,11 @@ const specifications  = async (req, res) => {
         });
     }
 }
-
+//end-point para eliminar especificaciones. 
 const deleteSpect = async (req, res) => {
     const productId = req.params.id;
-    const spectId = req.body.spectId; // Suponiendo que el ID de la especificación se pasa en req.body.spectId
-    console.log(productId, spectId)
+    const spectId = req.body.spectId; 
+
 
     try {
         const product = await Product.findById(productId);
@@ -905,6 +905,7 @@ const deleteSpect = async (req, res) => {
         return res.status(200).json({
             status: "success",
             message: "La especificación fue eliminada exitosamente"
+
         });
     } catch (error) {
         console.error("Error al eliminar la especificación:", error);
