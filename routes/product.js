@@ -23,7 +23,8 @@ const uploads = multer({storage})
 router.post("/create",check.auth, ProductController.createProduct)
 router.delete("/delete/:id",check.auth, ProductController.deleteProduct)
 router.put("/update/:id",check.auth, ProductController.updateProduct)
-router.post("/spect", check.auth, ProductController.specifications)
+router.post("/spect/:id", check.auth, ProductController.specifications)
+router.delete("/deletespect/:id", check.auth, ProductController.deleteSpect)
 
 //imagenes
 router.post("/uploads/:id",[check.auth, uploads.array("files")], ProductController.upload)

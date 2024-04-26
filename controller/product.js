@@ -47,6 +47,7 @@ const createProduct = async (req, res) => {
             userId: userId,
             name: params.name,
             description: params.description,
+            additionalInformation: params.additionalInformation,
             brand: params.brand,
             size: params.size,
             gender:params.gender,
@@ -832,8 +833,8 @@ const ventas = async (req, res) => {
 //crear especificacion
 const specifications  = async (req, res) => {
     try {
-        const { key, value, productId } = req.body;
-        console.log(req.body)
+        const { key, value } = req.body;
+        const productId = req.params.id
 
         // Verificar si el producto existe
         const product = await Product.findById(productId);
@@ -872,9 +873,47 @@ const specifications  = async (req, res) => {
     }
 }
 
+const deleteSpect = async (req, res) => {
+    const productId = req.params.id;
+    const spectId = req.body.spectId; // Suponiendo que el ID de la especificación se pasa en req.body.spectId
+    console.log(productId, spectId)
 
+    try {
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({
+                status: "error",
+                message: "El producto no existe"
+            });
+        }
 
+        // Busca la especificación por su _id
+        const existingSpecification = product.specifications.find(spec => spec._id.toString() === spectId);
 
+        if (!existingSpecification) {
+            return res.status(404).json({
+                status: "error",
+                message: "La especificación no existe en este producto"
+            });
+        }
+
+        // Elimina la especificación del array de especificaciones
+        product.specifications = product.specifications.filter(spec => spec._id.toString() !== spectId);
+
+        await product.save(); // Guarda los cambios en la base de datos
+
+        return res.status(200).json({
+            status: "success",
+            message: "La especificación fue eliminada exitosamente"
+        });
+    } catch (error) {
+        console.error("Error al eliminar la especificación:", error);
+        return res.status(500).json({
+            status: "error",
+            message: "Ocurrió un error al eliminar la especificación"
+        });
+    }
+};
 
 
 
@@ -897,5 +936,6 @@ module.exports = {
     featuredProducts,
     listBestSelling,
     ventas,
-    specifications
+    specifications,
+    deleteSpect
 }

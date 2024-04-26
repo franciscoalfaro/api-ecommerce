@@ -20,8 +20,12 @@ const validar = (params) => {
         errores.push("El campo 'size' no cumple con los requisitos de longitud.");
     }
 
-    if (validator.isEmpty(params.description) || !validator.isLength(params.description, { min: 3, max: undefined })) {
+    if (validator.isEmpty(params.description) || !validator.isLength(params.description, { min: 3, max: 200 })) {
         errores.push("El campo 'descripcion' no cumple con los requisitos de longitud.");
+    }
+
+    if (validator.isEmpty(params.additionalInformation) || !validator.isLength(params.additionalInformation, { min: 3, max: undefined })) {
+        errores.push("El campo 'informacion adicional' no cumple con los requisitos de longitud.");
     }
 
     if (validator.isEmpty(params.price) || !validator.isNumeric(params.price, { min: 3, max: undefined })) {
