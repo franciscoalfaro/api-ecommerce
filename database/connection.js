@@ -1,20 +1,29 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 require('dotenv').config();
 
-const connection = async()=>{
+const connection  = async () => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI,)
-        console.log("Connection success ecommerce")
-        
+        let mongoURI;
+
+        // Verifica si estamos en un entorno de producción
+        if (process.env.NODE_ENV === 'production') {
+            // Si es producción, utiliza la variable de entorno para la URI de MongoDB de producción
+            mongoURI = process.env.PROD_MONGODB_URI;
+        } else {
+            // Si no es producción, utiliza la variable de entorno para la URI de MongoDB de desarrollo
+            mongoURI = process.env.DEV_MONGODB_URI;
+        }
+
+        await mongoose.connect(mongoURI);
+        console.log("Conexión exitosa a la base de datos");
+
     } catch (error) {
-        console.log(error);
+        console.error("Error de conexión a la base de datos:", error);
         console.log('Intentando nuevamente la conexión en 2 segundos...');
-        setTimeout(connection, 2000);
-        
+        setTimeout(connection , 2000);
     }
 }
 
-
-module.exports={
-    connection
+module.exports = {
+    connection 
 }
