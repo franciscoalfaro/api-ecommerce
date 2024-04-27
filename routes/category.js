@@ -8,7 +8,7 @@ router.post("/newcategory",check.auth, CategoryController.createCategory)
 
 router.put("/update/:id",check.auth, CategoryController.updateCategory)
 router.delete("/delete/:id",check.auth, CategoryController.deleteCategory)
-router.get("/list/:page?",check.auth, CategoryController.listCategorys)
+router.get("/list",check.auth, CategoryController.listCategorys)
 router.get("/listcategorys/", CategoryController.listCategorysDrop)
 
 

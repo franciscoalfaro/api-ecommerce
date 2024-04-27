@@ -161,12 +161,12 @@ const listCategorys = async (req, res) => {
         }
 
         // Buscar todas las categorías asociadas al usuario
-        const categorys = await Category.paginate();
+        const categorys = await Category.find();
 
         return res.status(200).json({
             status: 'success',
             message: 'Categorías encontradas',
-            categorias:categorys.docs,
+            categorias:categorys,
 
         });
     } catch (error) {
