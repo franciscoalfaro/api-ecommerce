@@ -22,12 +22,27 @@ const createAddress = async (req, res) => {
 
         // Verificar si la dirección ya existe para el usuario
         const existsAddress = await Address.findOne({ direccion: params.direccion, userId: userId });
+
         if (existsAddress) {
-            return res.status(400).json({
-                status: "error",
-                message: "La dirección ya existe"
-            });
+            if (existsAddress.eliminado === true) {
+                // Si la dirección existe pero está marcada como eliminada, actualizar el estado de eliminado a falso
+                await Address.findByIdAndUpdate(existsAddress._id, { eliminado: false });
+        
+                return res.status(200).json({
+                    status: "success",
+                    message: "La dirección existente fue marcada como no eliminada",
+                    address: existsAddress
+                });
+            } else {
+                // Si la dirección existe y no está marcada como eliminada, devolver un error
+                return res.status(400).json({
+                    status: "error",
+                    message: "La dirección ya existe"
+                });
+            }
         }
+
+
 
         // Crear la dirección
         const newAddress = await Address.create({
@@ -65,7 +80,10 @@ const deleteAddress = async (req, res) => {
        
 
         // Buscar la red y verificar si el usuario logueado es el creador
-        const addresDelete = await Address.findOne({ _id: addressId, userId: userId });
+        //const addresDelete = await Address.findOne({ _id: addressId, userId: userId });
+
+        const addresDelete = await Address.findByIdAndUpdate( {_id: addressId, userId: userId});
+        
 
         if (!addresDelete) {
             return res.status(404).json({
@@ -82,12 +100,12 @@ const deleteAddress = async (req, res) => {
             });
         }
 
-        await Address.findByIdAndDelete(addressId);
+        const addresEliminada = await Address.findByIdAndUpdate(addressId, { eliminado: true });
 
         return res.status(200).json({
             status: 'success',
             message: 'Direccion eliminada correctamente',
-            redEliminada: addresDelete
+            redEliminada: addresEliminada
         });
 
     } catch (error) {
@@ -173,13 +191,13 @@ const listAddress = async (req, res) => {
         page: page,
         limit: itemPerPage,
         sort: { _id: -1 },
-        select: ("-password -email -role -__v")
+        select: ("-password -email -role -__v"),
 
     };
 
     try {
-        // Filtrar el saldo por el ID del usuario
-        const address = await Address.paginate({ userId: userId }, opciones);
+        // Filtrar la direccion por el ID del usuario y por el eliminado false
+        const address = await Address.paginate({ userId: userId, eliminado:false }, opciones);
 
         if (!address || address.docs.length === 0) {
             return res.status(404).json({

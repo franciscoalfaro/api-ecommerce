@@ -36,7 +36,11 @@ const AddressSchema = Schema({
     comuna:{
         type:String,
         require:true
-    }    
+    },
+    eliminado:{
+        type:Boolean,
+        default:false
+    }
 
 
 })
