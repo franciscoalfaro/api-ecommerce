@@ -227,11 +227,6 @@ const createOrderForGuest = async (req, res) => {
     }
 };
 
-
-
-
-
-
 //funcion para actualizar stock al crear la orden
 const updateStock = async (productId, quantity) => {
 
@@ -591,27 +586,72 @@ const updateStatusOrder = async (req, res) => {
 
 
             if (status === 'canceled') {
-                order.status = "canceled";
-                await order.save();
+                try {
+                    order.status = "canceled";
+                    await order.save();
 
-                // Restablecer el stock de los productos asociados a la orden cancelada
-                for (const product of order.products) {
-                    const stock = await Stock.findOne({ productId: product.product });
+                    const now = new Date();
+                    const month = now.getMonth() + 1; // Sumar 1 porque los meses van de 0 a 11
+                    const year = now.getFullYear();
 
+                    let totalSaleAmount = 0;
 
-                    if (stock) {
-                        stock.quantity += product.quantity; // Restablecer el stock
-                        await stock.save();
+                    // Restablecer el stock de los productos asociados a la orden cancelada
+                    for (const orderProduct of order.products) {
+                        const product = await Product.findById(orderProduct.product);
+                        if (product) {
+                            // Restablecer el stock
+                            const stock = await Stock.findOne({ productId: product._id });
+                            if (stock) {
+                                stock.quantity += orderProduct.quantity;
+                                await stock.save();
+                            }
+
+                            // Buscar el registro de venta correspondiente a este producto y mes
+                            const sale = await Sale.findOne({ 'products.product': product.name, month, year });
+                            if (sale) {
+                                // Restablecer la cantidad y el monto total de la venta
+                                sale.products.forEach(p => {
+                                    if (p.product === product.name) {
+                                        p.quantity -= orderProduct.quantity;
+                                    }
+                                });
+                                sale.lastUpdatedAt = now;
+
+                                // Calcular el monto total de la venta después de la cancelación
+                                sale.ventaMensual = sale.products.reduce((total, p) => total + (p.priceunitary * p.quantity), 0);
+
+                                // Guardar el registro de venta actualizado
+                                await sale.save();
+
+                                // Actualizar el total de ventas mensuales
+                                totalSaleAmount -= orderProduct.quantity * product.price;
+
+                                // Actualizar el registro de Bestselling
+                                let bestselling = await Bestselling.findOne({ nombreproducto: product.name });
+                                if (bestselling) {
+                                    bestselling.quantity -= orderProduct.quantity;
+                                    await bestselling.save();
+                                }
+                            }
+                        }
                     }
+
+                    return res.status(200).json({
+                        status: 'success',
+                        message: 'Order cancelada correctamente, stock restablecido, ventas revertidas en Sale y bestSelling restablecido',
+                        order: order
+                    });
+                } catch (error) {
+                    return res.status(500).json({
+                        status: 'error',
+                        message: 'Error al cancelar la orden',
+                        error: error.message
+                    });
                 }
-
-                return res.status(200).json({
-                    status: 'success',
-                    message: 'Order cancelada correctamente',
-                    order: order
-                });
-
             }
+
+
 
 
         }
