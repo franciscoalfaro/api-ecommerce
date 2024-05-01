@@ -15,6 +15,7 @@ const Cart = require("../models/cart.js")
 const createCart = async (req, res) => {
     const { items } = req.body;
     const userId = req.user.id
+    console.log(items)
 
     try {
         // Verificar si el usuario existe

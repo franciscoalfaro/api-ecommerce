@@ -462,6 +462,8 @@ const remove = async (req, res) => {
 }
 
 
+
+
 module.exports = {
     register,
     login,
@@ -471,5 +473,5 @@ module.exports = {
     avatar,
     upload,
     remove,
-    createUser
+    createUser,
 }

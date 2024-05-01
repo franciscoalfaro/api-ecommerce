@@ -10,7 +10,7 @@ const check = require("../middlewares/auth")
 router.post("/create",check.auth, CartController.createCart)
 router.put("/update/:id",check.auth, CartController.updateCart)
 router.delete("/delete/:id",check.auth, CartController.deleteCart)
-router.get("/list/:page?",check.auth, CartController.list)
+router.get("/list/",check.auth, CartController.list)
 
 
 //exportar router

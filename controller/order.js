@@ -51,8 +51,6 @@ const createOrder = async (req, res) => {
             totalPrice += productData.quantity * productData.priceunitary;
 
 
-
-
             // Actualizar el stock
             await updateStock(productData.product, productData.quantity);
         }
@@ -112,6 +110,7 @@ const createOrder = async (req, res) => {
 const createOrderForGuest = async (req, res) => {
     const { name, surname, email, products } = req.body;
     const { direccion, numero, phone, codigoPostal, region, ciudad, comuna } = req.body;
+    
 
     try {
         // Buscar el usuario por su correo electrónico
