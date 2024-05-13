@@ -271,7 +271,7 @@ const deleteOrder = async (req, res) => {
         if (!allowedRoles.includes(userRole)) {
             return res.status(403).json({
                 status: "error",
-                message: "No tiene permisos para crear categorías"
+                message: "No tiene permisos para eliminar orden"
             });
         }
 

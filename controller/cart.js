@@ -110,13 +110,23 @@ const deleteCart = async (req, res) => {
 }
 
 
-//end-point para listar
+//end-point para listar carrito
 const list = async (req, res) => {
     const userId = req.user.id
 
+    const opciones = {
+        select: ("-_id -__v"),
+        populate: [
+            { 
+                path: 'items.product', populate: { path: 'category', select: 'name' },
+                path: 'items.product', populate: { path: 'stock', select:'location quantity'}
+            }
+        ]
+    };
+
     try {
         // Buscar el carrito del usuario por su ID
-        const cart = await Cart.findOne({ userId });
+        const cart = await Cart.findOne({ userId }).populate(opciones.populate);
 
         // Si no se encuentra el carrito, devolver un error
         if (!cart) {
@@ -129,7 +139,7 @@ const list = async (req, res) => {
         return res.status(200).json({
             status: "success",
             message: "Carrito encontrado",
-            cart
+            cart : cart.items
         });
     } catch (error) {
         return res.status(500).json({
