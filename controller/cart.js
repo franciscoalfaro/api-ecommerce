@@ -15,7 +15,7 @@ const Cart = require("../models/cart.js")
 const createCart = async (req, res) => {
     const { items } = req.body;
     const userId = req.user.id
-    console.log(items)
+
 
     try {
         // Verificar si el usuario existe
@@ -70,11 +70,6 @@ const createCart = async (req, res) => {
         });
     }
 }
-
-
-
-
-
 
 //end-point para eliminar
 const deleteCart = async (req, res) => {
@@ -152,9 +147,8 @@ const list = async (req, res) => {
 
 //end-point para actualizar
 const updateCart = async (req, res) => {
-    const userId = req.user.id
+    const userId = req.user.id;
     const { items } = req.body;
-   
 
     try {
         // Buscar el carrito del usuario por su ID
@@ -169,10 +163,25 @@ const updateCart = async (req, res) => {
         }
 
         // Actualizar los items del carrito
-        cart.items = items;
+        for (const item of items) {
+            // Verificar si el producto existe en el carrito
+            const existingItem = cart.items.find(cartItem => cartItem.product.toString() === item.product);
 
-
-
+            if (existingItem) {
+                // Si el producto ya existe en el carrito, actualizar la cantidad solo si es mayor
+                if (item.quantity > existingItem.quantity) {
+                    existingItem.quantity = item.quantity;
+                } else if (item.quantity === 0) {
+                    // Si la cantidad enviada es 0, eliminar el producto del carrito
+                    cart.items = cart.items.filter(cartItem => cartItem.product.toString() !== item.product);
+                }
+            } else {
+                // Si el producto no existe en el carrito, agregarlo solo si la cantidad es mayor que 0
+                if (item.quantity > 0) {
+                    cart.items.push({ product: item.product, quantity: item.quantity });
+                }
+            }
+        }
 
         // Guardar los cambios en el carrito
         await cart.save();
@@ -189,7 +198,11 @@ const updateCart = async (req, res) => {
             error: error.message
         });
     }
-}
+};
+
+
+
+
 
 module.exports = {
     createCart,
