@@ -2,12 +2,12 @@
   "name": "ecommerce",
   "version": "1.0.0",
   "description": "",
-  "main": "apicom.js",
+  "main": "ecommerce.js",
   "type":"commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "cross-env NODE_ENV=production node apicom.js",
-    "dev": "cross-env NODE_ENV=development nodemon apicom.js"
+    "start": "cross-env NODE_ENV=production node ecommerce.js",
+    "dev": "cross-env NODE_ENV=development nodemon ecommerce.js"
   },
   "author": "francisco alfaro",
   "license": "MIT",
