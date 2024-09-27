@@ -4,7 +4,7 @@ require('dotenv').config();
 const connection = async()=>{
     try {
         await mongoose.connect(process.env.MONGODB_URI,)
-        console.log("Connection success BD Gastos")
+        console.log("Connection success BD ecommerce")
         
     } catch (error) {
         console.log(error);
