@@ -6,7 +6,7 @@
   "type":"commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "cross-env NODE_ENV=production node ecommerce.js",
+    "start": "nodemon ecommerce.js",
     "dev": "cross-env NODE_ENV=development nodemon ecommerce.js"
   },
   "author": "francisco alfaro",
